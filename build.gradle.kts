@@ -1,8 +1,10 @@
-plugins {
-    // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
-    id("org.jetbrains.kotlin.jvm") version "1.9.10"
+import org.jetbrains.gradle.ext.settings
+import org.jetbrains.gradle.ext.taskTriggers
 
-    // Apply the application plugin to add support for building a CLI application in Java.
+plugins {
+    id("org.jetbrains.kotlin.jvm") version "1.9.10"
+    id("antlr")
+    id("org.jetbrains.gradle.plugin.idea-ext") version "1.1.7"
     application
 }
 
@@ -12,6 +14,8 @@ repositories {
 }
 
 dependencies {
+    antlr("org.antlr:antlr4:4.5")
+
     // Use the Kotlin JUnit 5 integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 
@@ -39,4 +43,8 @@ application {
 tasks.named<Test>("test") {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
+}
+
+tasks.generateGrammarSource {
+    arguments = arguments + listOf("-visitor", "-long-messages")
 }
