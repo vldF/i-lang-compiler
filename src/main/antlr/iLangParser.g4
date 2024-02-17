@@ -56,6 +56,9 @@ statement
    | forLoop
    | /* ForeachLoop */
    | ifStatement
+   | RETURN
+   | BREAK
+   | CONTINUE
    ;
 
 assignment

@@ -8,6 +8,12 @@ TYPE : 'type';
 
 ROUTINE : 'routine';
 
+RETURN : 'return';
+
+BREAK : 'break';
+
+CONTINUE : 'CONTINUE';
+
 END : 'end';
 
 COLON : ':';
