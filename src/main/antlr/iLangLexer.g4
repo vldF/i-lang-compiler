@@ -18,6 +18,8 @@ END : 'end';
 
 COLON : ':';
 
+SEMICOLON : ';';
+
 L_PARENTHESIS : '(';
 
 R_PARENTHESIS : ')';

@@ -47,14 +47,17 @@ recordType
 
 arrayType : ARRAY L_BRACKET expression R_BRACKET type;
 
-body : (simpleDeclaration | statement);
+body
+   : (simpleDeclaration | statement)+
+   | (simpleDeclaration | statement) SEMICOLON ((simpleDeclaration | statement) SEMICOLON )*
+   ;
 
 statement
    : assignment
    | routineCall
    | whileLoop
    | forLoop
-   | /* ForeachLoop */
+   /* | ForeachLoop */
    | ifStatement
    | RETURN
    | BREAK
