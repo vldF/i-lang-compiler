@@ -59,3 +59,9 @@ task<JavaExec>("generateTests") {
     classpath = sourceSets["test"].runtimeClasspath
     mainClass = "TestsGeneratorKt"
 }
+
+tasks.test {
+    testLogging {
+        events("passed", "skipped", "failed", "standardOut", "standardError")
+    }
+}
