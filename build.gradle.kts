@@ -56,3 +56,9 @@ tasks.named("compileKotlin") {
 tasks.named("compileTestKotlin") {
     dependsOn(tasks.named("generateTestGrammarSource"))
 }
+
+task<JavaExec>("generateTests") {
+    group = "verification"
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass = "TestsGeneratorKt"
+}
