@@ -66,7 +66,7 @@ GREAT_EQ : '>=';
 
 EQ : '=';
 
-NOT_EQ : '\\=';
+NOT_EQ : '/=';
 
 MUL : '*';
 
@@ -94,7 +94,7 @@ OR : 'or';
 
 XOR : 'xor';
 
-Identifier : LETTER+ [A-Z_0-9]*;
+Identifier : LETTER+ [A-Za-z_0-9]*;
 
 IntegralLiteral : DIGIT+;
 
@@ -103,5 +103,5 @@ RealLiteral : DIGIT+ DOT DIGIT+;
 WHITESPACE : [ \t\r\n]+    -> channel(HIDDEN);
 LINE_COMMENT : '//' ~[\r\n]* -> channel(HIDDEN);
 
-fragment LETTER : [A-Z];
+fragment LETTER : [A-Za-z];
 fragment DIGIT : [0-9];

@@ -1,6 +1,6 @@
-grammar iLangParser;
+parser grammar iLangParser;
 
-import iLangLexer;
+options { tokenVocab = iLangLexer; }
 
 program : ( simpleDeclaration | routineDeclaration)*;
 
@@ -25,7 +25,7 @@ routineDeclaration
    ;
 parameters : parameterDeclaration ( COMMA parameterDeclaration )* ;
 
-parameterDeclaration : Identifier COLON Identifier ;
+parameterDeclaration : Identifier COLON type ;
 
 type
    : primitiveType
@@ -45,31 +45,39 @@ recordType
      variableDeclaration+
      END;
 
-arrayType : ARRAY L_BRACKET expression R_BRACKET type;
+arrayType : ARRAY L_BRACKET expression? R_BRACKET type;
 
 body
-   : (simpleDeclaration | statement)+
+   : (simpleDeclaration | statement)*
    | (simpleDeclaration | statement) SEMICOLON ((simpleDeclaration | statement) SEMICOLON )*
    ;
 
 statement
    : assignment
-   | routineCall
+   | routineCallStatement
    | whileLoop
    | forLoop
    /* | ForeachLoop */
    | ifStatement
-   | RETURN
+   | returnStatement
    | BREAK
    | CONTINUE
+   ;
+
+returnStatement
+   : RETURN expression?
    ;
 
 assignment
    : modifiablePrimary ASSIGNMENT expression
    ;
 
-routineCall
+routineCallStatement
    : Identifier (L_PARENTHESIS expression ( COMMA expression )* R_PARENTHESIS )?
+   ;
+
+routineCallExpression
+   : Identifier L_PARENTHESIS expression ( COMMA expression )* R_PARENTHESIS
    ;
 
 whileLoop
@@ -96,23 +104,14 @@ ifStatement
      END
    ;
 
-expression : relation (op=(AND | OR | XOR) relation)?;
-
-relation
-   : simple (op=(LESS | LESS_EQ | GREAT | GREAT_EQ | EQ | NOT_EQ) simple)?
-   ;
-
-simple
-   : factor (op=(MUL | DIV | MOD) factor)?
-   ;
-
-factor
-   : summand (op=(PLUS | MINUS) summand)?
-   ;
-
-summand
-   : primary
-   | L_PARENTHESIS expression R_PARENTHESIS
+expression
+   : L_PARENTHESIS expression R_PARENTHESIS
+   | expression op=(MUL | DIV | MOD) expression
+   | expression op=(PLUS | MINUS) expression
+   | MINUS expression
+   | expression op=(EQ | NOT_EQ | LESS_EQ | LESS | GREAT_EQ | GREAT) expression
+   | expression op=(AND | OR | XOR) expression
+   | primary
    ;
 
 primary
@@ -121,6 +120,7 @@ primary
    | TRUE
    | FALSE
    | modifiablePrimary
+   | routineCallExpression
    ;
 
 modifiablePrimary
