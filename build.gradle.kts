@@ -1,6 +1,3 @@
-import org.jetbrains.gradle.ext.settings
-import org.jetbrains.gradle.ext.taskTriggers
-
 plugins {
     id("org.jetbrains.kotlin.jvm") version "1.9.10"
     id("antlr")
