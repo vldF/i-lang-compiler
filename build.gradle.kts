@@ -48,3 +48,11 @@ tasks.named<Test>("test") {
 tasks.generateGrammarSource {
     arguments = arguments + listOf("-visitor", "-long-messages")
 }
+
+tasks.named("compileKotlin") {
+    dependsOn(tasks.named("generateGrammarSource"))
+}
+
+tasks.named("compileTestKotlin") {
+    dependsOn(tasks.named("generateTestGrammarSource"))
+}
