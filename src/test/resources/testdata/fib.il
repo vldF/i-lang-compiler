@@ -7,8 +7,7 @@ routine fib(n: integer) : integer is
 
     for i in 1..(n - 1) loop
         nextNum := num1 + num2
-        num1 := num2
-        num2 := nextNum
+        num1 := num2; num2 := nextNum
     end
 
     return nextNum
