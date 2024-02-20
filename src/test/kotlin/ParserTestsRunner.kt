@@ -28,7 +28,7 @@ object ParserTestsRunner {
         parser.program()
 
         Assertions.assertFalse(lexerErrorListener.hasErrors, "lexer errors were met!")
-        Assertions.assertFalse(parserErrorListener.hasErrors, "lexer errors were met!")
+        Assertions.assertFalse(parserErrorListener.hasErrors, "parser errors were met!")
     }
 
     private class ErrorListener : DiagnosticErrorListener(/* exactOnly = */ false) {
