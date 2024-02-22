@@ -1,21 +1,20 @@
-import org.antlr.v4.runtime.*
+import org.antlr.v4.runtime.ANTLRInputStream
+import org.antlr.v4.runtime.CommonTokenStream
 import java.io.File
 
-fun main() {
-    val basicPath = "./src/test/resources/testdata/"
-    val programs = File(basicPath).listFiles()!!
+fun main(args: Array<String>) {
+    val path = args.first()
+    val program = File(path)
 
-    for (program in programs) {
-        val code = program.readText()
-        val `in` = ANTLRInputStream(code)
-        val lexer = iLangLexer(`in`)
-        val tokens = CommonTokenStream(lexer)
+    val code = program.readText()
+    val `in` = ANTLRInputStream(code)
+    val lexer = iLangLexer(`in`)
+    val tokens = CommonTokenStream(lexer)
 
-        val parser = iLangParser(tokens)
-        parser.program()
+    val parser = iLangParser(tokens)
+    parser.program()
 
-        printTokensSequence(tokens)
-    }
+    printTokensSequence(tokens)
 }
 
 private fun printTokensSequence(tokenStream: CommonTokenStream) {
@@ -25,7 +24,7 @@ private fun printTokensSequence(tokenStream: CommonTokenStream) {
             continue
         }
 
-        print("[$text]")
+        print("$text\n")
     }
     println()
 }
