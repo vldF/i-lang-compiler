@@ -7,6 +7,7 @@ fun main() {
     val testdataDir = File(testsBasePath).resolve("resources").resolve("testdata")
 
     val testCases = testdataDir.listFiles()!!
+    testCases.sortBy { it.absoluteFile }
 
     val code = StringBuilder()
     code.addPreamble()
