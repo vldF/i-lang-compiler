@@ -1,11 +1,19 @@
 package edu.itmo.ilang.ir
 
+sealed interface AccessExpression : Expression
+
+data class VariableAccessExpression(
+    val variable: ValueDeclaration
+) : AccessExpression
+
 data class RecordFieldAccessExpression(
-    val record : RecordType,
+    val accessedExpression: AccessExpression,
+    val recordType : RecordType,
     val field: String,
-) : PossibleLhsExpression
+) : AccessExpression
 
 data class ArrayAccessExpression(
-    val array: ArrayType,
+    val accessedExpression: AccessExpression,
+    val arrayType: ArrayType,
     val indexExpression: Expression
-) : PossibleLhsExpression
+) : AccessExpression

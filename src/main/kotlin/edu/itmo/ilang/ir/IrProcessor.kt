@@ -43,6 +43,7 @@ interface IrProcessor<T> {
             is RoutineType -> processRoutineType(entry)
             is ArrayType -> processArrayType(entry)
             is RecordType -> processRecordType(entry)
+            is VariableAccessExpression -> processVariableAccess(entry)
         }
     }
 
@@ -125,4 +126,6 @@ interface IrProcessor<T> {
     fun processArrayType(arrayType: ArrayType): T
 
     fun processRecordType(recordType: RecordType): T
+
+    fun processVariableAccess(variableAccess: VariableAccessExpression): T
 }

@@ -3,7 +3,7 @@ package edu.itmo.ilang.ir
 sealed interface Statement : BodyEntry
 
 data class Assignment(
-    val lhs: PossibleLhsExpression,
+    val lhs: AccessExpression,
     val rhs: Expression
 ) : Statement
 

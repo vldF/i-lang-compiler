@@ -24,7 +24,6 @@ data class RecordType(
     val fields: Map<String, Type>,
 ) : UserType
 
-
 data class RoutineType(
     val argumentTypes: List<Type>,
     val returnType: Type

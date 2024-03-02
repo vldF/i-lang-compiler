@@ -5,11 +5,13 @@ sealed interface Declaration : IrEntry {
     val type: Type
 }
 
+sealed interface ValueDeclaration : Declaration
+
 data class VariableDeclaration(
     override val name: String,
     override val type: Type,
     val initialExpression: Expression,
-) : Declaration, BodyEntry
+) : ValueDeclaration, BodyEntry
 
 data class TypeDeclaration(
     override val name: String,
@@ -26,4 +28,4 @@ data class RoutineDeclaration(
 data class ParameterDeclaration(
     override val name: String,
     override val type: Type
-) : Declaration
+) : ValueDeclaration
