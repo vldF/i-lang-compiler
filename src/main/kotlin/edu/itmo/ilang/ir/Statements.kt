@@ -26,7 +26,7 @@ data class ForLoop(
     val rangeStart: Expression,
     val rangeEnd: Expression,
     val body: Body
-)
+) : Statement
 
 data class IfStatement(
     val condition: Expression,

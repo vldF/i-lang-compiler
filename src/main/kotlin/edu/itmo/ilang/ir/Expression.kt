@@ -1,6 +1,6 @@
 package edu.itmo.ilang.ir
 
-sealed interface Expression
+sealed interface Expression : IrEntry
 
 sealed interface PossibleLhsExpression : Expression
 

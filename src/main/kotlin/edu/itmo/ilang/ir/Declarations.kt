@@ -1,6 +1,6 @@
 package edu.itmo.ilang.ir
 
-sealed interface Declaration {
+sealed interface Declaration : IrEntry {
     val name: String
     val type: Type
 }

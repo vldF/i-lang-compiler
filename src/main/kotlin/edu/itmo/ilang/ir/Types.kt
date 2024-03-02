@@ -1,6 +1,6 @@
 package edu.itmo.ilang.ir
 
-sealed interface Type
+sealed interface Type : IrEntry
 
 sealed interface PrimitiveType : Type
 
