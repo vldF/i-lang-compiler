@@ -4,16 +4,22 @@ sealed interface AccessExpression : Expression
 
 data class VariableAccessExpression(
     val variable: ValueDeclaration
-) : AccessExpression
+) : AccessExpression {
+    override val type = variable.type
+}
 
 data class RecordFieldAccessExpression(
     val accessedExpression: AccessExpression,
     val recordType : RecordType,
     val field: String,
-) : AccessExpression
+) : AccessExpression {
+    override val type = recordType.fields[field]!!
+}
 
 data class ArrayAccessExpression(
     val accessedExpression: AccessExpression,
     val arrayType: ArrayType,
     val indexExpression: Expression
-) : AccessExpression
+) : AccessExpression {
+    override val type = arrayType.contentType
+}

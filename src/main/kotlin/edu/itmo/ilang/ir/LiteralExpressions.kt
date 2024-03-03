@@ -6,12 +6,18 @@ sealed interface Literal <T> : Expression {
 
 data class IntegralLiteral(
     override val value: Int
-) : Literal<Int>
+) : Literal<Int> {
+    override val type = IntegerType
+}
 
 data class RealLiteral(
     override val value: Double
-) : Literal<Double>
+) : Literal<Double> {
+    override val type = RealType
+}
 
 data class BoolLiteral(
     override val value: Boolean
-) : Literal<Boolean>
+) : Literal<Boolean> {
+    override val type = BoolType
+}
