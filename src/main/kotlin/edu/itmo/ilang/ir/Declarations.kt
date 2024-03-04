@@ -10,7 +10,7 @@ sealed interface ValueDeclaration : Declaration
 data class VariableDeclaration(
     override val name: String,
     override val type: Type,
-    val initialExpression: Expression,
+    val initialExpression: Expression?,
 ) : ValueDeclaration, BodyEntry
 
 data class TypeDeclaration(

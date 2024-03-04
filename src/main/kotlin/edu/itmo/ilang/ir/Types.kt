@@ -10,18 +10,23 @@ data object RealType : PrimitiveType
 
 data object BoolType : PrimitiveType
 
+data object UnitType : PrimitiveType
+
 sealed interface UserType : Type {
-    val identifier: String?
+    var identifier: String?
 }
 
 data class ArrayType(
-    override val identifier: String?,
+    override var identifier: String?,
     val contentType: Type,
-) : UserType
+) : UserType {
+    // null specify any size. Used for parameter declaration
+    var size: Int? = null
+}
 
 data class RecordType(
-    override val identifier: String?,
-    val fields: Map<String, Type>,
+    override var identifier: String?,
+    val fields: List<Pair<String, Type>>,
 ) : UserType
 
 data class RoutineType(
