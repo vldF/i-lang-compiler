@@ -9,13 +9,26 @@ fun main() {
     val testCases = testdataDir.listFiles()!!
     testCases.sortBy { it.absoluteFile }
 
+    generateParserTests(testCases)
+    generateIrBuilderTests(testCases)
+}
+
+private fun generateParserTests(testCases: Array<File>) {
+    generateTests(testCases, "iLangParserTests", "ParserTestsRunner")
+}
+
+private fun generateIrBuilderTests(testCases: Array<File>) {
+    generateTests(testCases, "iLangIrBuilderTests", "IrBuilderTestsRunner")
+}
+
+private fun generateTests(testCases: Array<File>, testClassName: String, testRunnerName: String) {
     val code = StringBuilder()
     code.addPreamble()
-    code.addTestClass {
-        testCases.forEach(::addTestFunction)
+    code.addTestClass(testClassName) {
+        testCases.forEach { addTestFunction(it, testRunnerName) }
     }
 
-    val resultFilePath = File(testsBasePath).resolve("kotlin").resolve("iLangTests.kt")
+    val resultFilePath = File(testsBasePath).resolve("kotlin").resolve("$testClassName.kt")
     resultFilePath.writeText(code.toString())
 }
 
@@ -31,22 +44,22 @@ private fun StringBuilder.addPreamble() {
     appendLine()
 }
 
-private fun StringBuilder.addTestClass(content: StringBuilder.() -> Unit) {
+private fun StringBuilder.addTestClass(className: String, content: StringBuilder.() -> Unit) {
     val contentStringBuilder = StringBuilder()
     contentStringBuilder.content()
     val contentLines = contentStringBuilder.lines()
 
     appendLine("@Suppress(\"ClassName\")")
-    appendLine("class iLangTests {")
+    appendLine("class $className {")
     contentLines.map { INDENT + it }.forEach(::appendLine)
     appendLine("}")
 }
 
-private fun StringBuilder.addTestFunction(file: File) {
+private fun StringBuilder.addTestFunction(file: File, testRunnerName: String) {
     val content = """
         @Test
         fun ${file.nameWithoutExtension}_test() {
-            ParserTestsRunner.run("${file.nameWithoutExtension}")
+            $testRunnerName.run("${file.nameWithoutExtension}")
         }
     """.trimIndent()
 
