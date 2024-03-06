@@ -22,7 +22,7 @@ data class RoutineDeclaration(
     override val name: String,
     override val type: RoutineType,
     val parameters: List<ParameterDeclaration>,
-    val body: Body
+    var body: Body?
 ) : Declaration
 
 data class ParameterDeclaration(

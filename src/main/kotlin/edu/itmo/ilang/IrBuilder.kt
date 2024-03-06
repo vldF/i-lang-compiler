@@ -58,9 +58,8 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
             type = initialExpression!!.type
         }
 
-        symbolTable.addSymbol(name, SymbolInfo(type))
-
         return VariableDeclaration(name, type, initialExpression)
+            .also { symbolTable.addSymbol(name, SymbolInfo(type, it)) }
     }
 
     override fun visitTypeDeclaration(ctx: TypeDeclarationContext): TypeDeclaration {
@@ -70,9 +69,8 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
             type.identifier = name
         }
 
-        symbolTable.addSymbol(name, SymbolInfo(type))
-
         return TypeDeclaration(name, type)
+            .also { symbolTable.addSymbol(name, SymbolInfo(type, it)) }
     }
 
     override fun visitRoutineDeclaration(ctx: RoutineDeclarationContext): RoutineDeclaration {
@@ -86,14 +84,11 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
             } ?: emptyList()
             val routineType = RoutineType(parameters.map { it.type }, returnType)
 
-            symbolTable.addSymbolToParentScope(name, SymbolInfo(routineType))
+            val routineDeclaration = RoutineDeclaration(name, routineType, parameters, null)
+            symbolTable.addSymbolToParentScope(name, SymbolInfo(routineType, routineDeclaration))
 
-            return RoutineDeclaration(
-                name,
-                routineType,
-                parameters,
-                visitBody(ctx.body())
-            )
+            routineDeclaration.body = visitBody(ctx.body())
+            return routineDeclaration
         } finally {
             symbolTable.leaveScope()
         }
@@ -107,9 +102,8 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
         val name = ctx.Identifier().text
         val type = visitType(ctx.type())
 
-        symbolTable.addSymbol(name, SymbolInfo(type))
-
         return ParameterDeclaration(name, type)
+            .also { symbolTable.addSymbol(name, SymbolInfo(type, it)) }
     }
 
     override fun visitType(ctx: TypeContext): Type {
