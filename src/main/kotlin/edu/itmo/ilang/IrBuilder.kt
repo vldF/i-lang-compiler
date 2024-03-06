@@ -12,22 +12,6 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
 
     private val symbolTable = SymbolTable()
 
-    override fun visit(tree: ParseTree): IrEntry {
-        TODO("Not yet implemented")
-    }
-
-    override fun visitChildren(node: RuleNode): IrEntry {
-        TODO("Not yet implemented")
-    }
-
-    override fun visitTerminal(node: TerminalNode): IrEntry {
-        TODO("Not yet implemented")
-    }
-
-    override fun visitErrorNode(node: ErrorNode): IrEntry {
-        TODO("Not yet implemented")
-    }
-
     override fun visitProgram(ctx: ProgramContext): Program {
         return symbolTable.withScope {
             Program(ctx.children.map { it.accept(this)
@@ -60,13 +44,17 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
 
     override fun visitTypeDeclaration(ctx: TypeDeclarationContext): TypeDeclaration {
         val name = ctx.Identifier().text
+        val symbolInfo = SymbolInfo(MuParameter, null)
+        symbolTable.addSymbol(name, symbolInfo)
+
         val type = visitType(ctx.type())
         if (type is UserType) {
             type.identifier = name
         }
+        symbolInfo.type = type
 
         return TypeDeclaration(name, type)
-            .also { symbolTable.addSymbol(name, SymbolInfo(type, it)) }
+            .also { symbolInfo.declaration = it }
     }
 
     override fun visitRoutineDeclaration(ctx: RoutineDeclarationContext): RoutineDeclaration {
@@ -289,5 +277,21 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
         }
 
         return result
+    }
+
+    override fun visit(tree: ParseTree): IrEntry {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitChildren(node: RuleNode): IrEntry {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitTerminal(node: TerminalNode): IrEntry {
+        TODO("Not yet implemented")
+    }
+
+    override fun visitErrorNode(node: ErrorNode): IrEntry {
+        TODO("Not yet implemented")
     }
 }

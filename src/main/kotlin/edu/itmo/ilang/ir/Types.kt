@@ -12,6 +12,8 @@ data object BoolType : PrimitiveType
 
 data object UnitType : PrimitiveType
 
+data object MuParameter : Type
+
 sealed interface UserType : Type {
     var identifier: String?
 }

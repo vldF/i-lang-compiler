@@ -4,8 +4,8 @@ import edu.itmo.ilang.ir.Declaration
 import edu.itmo.ilang.ir.Type
 
 data class SymbolInfo(
-    val type: Type,
-    val declaration: Declaration
+    var type: Type,
+    var declaration: Declaration?
 )
 
 class SymbolTable {
