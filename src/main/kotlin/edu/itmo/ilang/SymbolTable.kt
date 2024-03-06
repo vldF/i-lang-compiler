@@ -21,7 +21,7 @@ class SymbolTable {
     }
 
     fun addSymbol(symbol: String, symbolInfo: SymbolInfo) {
-        addSymbol(symbol, symbolInfo, symbols.last)
+        addSymbol(symbol, symbolInfo, symbols.last())
     }
 
     fun addSymbolToParentScope(symbol: String, symbolInfo: SymbolInfo) {

@@ -40,6 +40,7 @@ interface IrProcessor<T> {
             BoolType -> processBoolType(entry as BoolType)
             IntegerType -> processIntegerType(entry as IntegerType)
             RealType -> processRealType(entry as RealType)
+            UnitType -> processUnitType(entry as UnitType)
             is RoutineType -> processRoutineType(entry)
             is ArrayType -> processArrayType(entry)
             is RecordType -> processRecordType(entry)
@@ -120,6 +121,8 @@ interface IrProcessor<T> {
     fun processIntegerType(integerType: IntegerType): T
 
     fun processRealType(realType: RealType): T
+
+    fun processUnitType(unitType: UnitType): T
 
     fun processRoutineType(routineType: RoutineType): T
 

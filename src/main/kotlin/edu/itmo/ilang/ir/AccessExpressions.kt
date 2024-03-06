@@ -13,7 +13,7 @@ data class RecordFieldAccessExpression(
     val recordType : RecordType,
     val field: String,
 ) : AccessExpression {
-    override val type = recordType.fields[field]!!
+    override val type = recordType.fields.first { it.first == field }.second
 }
 
 data class ArrayAccessExpression(
