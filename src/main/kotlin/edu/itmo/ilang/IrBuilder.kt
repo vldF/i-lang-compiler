@@ -167,11 +167,18 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
     }
 
     override fun visitRoutineCallStatement(ctx: RoutineCallStatementContext): RoutineCall {
-        TODO("Not yet implemented")
+        return visitRoutineCall(ctx.Identifier().text, ctx.expression())
     }
 
     override fun visitRoutineCallExpression(ctx: RoutineCallExpressionContext): RoutineCall {
-        TODO("Not yet implemented")
+        return visitRoutineCall(ctx.Identifier().text, ctx.expression())
+    }
+
+    private fun visitRoutineCall(routineName: String, args: List<ExpressionContext>?): RoutineCall {
+        val declaration = symbolTable.lookup(routineName)?.declaration ?: TODO()
+        val expressions = args?.map { visitExpression(it) } ?: emptyList()
+
+        return RoutineCall(declaration as RoutineDeclaration, expressions)
     }
 
     override fun visitWhileLoop(ctx: WhileLoopContext): WhileLoop {
