@@ -9,6 +9,9 @@ import org.antlr.v4.runtime.tree.RuleNode
 import org.antlr.v4.runtime.tree.TerminalNode
 
 class IrBuilder : iLangParserVisitor<IrEntry> {
+
+    private val symbolTable = SymbolTable()
+
     override fun visit(tree: ParseTree): IrEntry {
         TODO("Not yet implemented")
     }
@@ -26,9 +29,11 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
     }
 
     override fun visitProgram(ctx: ProgramContext): Program {
-        return Program(ctx.children.map { it.accept(this)
-                as? Declaration
-            ?: TODO()})
+        return symbolTable.withScope {
+            Program(ctx.children.map { it.accept(this)
+                    as? Declaration
+                ?: TODO()})
+        }
     }
 
     override fun visitSimpleDeclaration(ctx: SimpleDeclarationContext): Declaration {
@@ -37,8 +42,9 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
     }
 
     override fun visitVariableDeclaration(ctx: VariableDeclarationContext): VariableDeclaration {
+        val name = ctx.Identifier().text
         val initialExpression = ctx.expression()?.let { visitExpression(it) }
-        val type = ctx.type()?.let { visitType(it) }
+        var type = ctx.type()?.let { visitType(it) }
 
         if (initialExpression == null && type == null) {
             TODO()
@@ -48,9 +54,13 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
             TODO()
         }
 
-        // TODO выделение памяти под массивы и структуры
+        if (type == null) {
+            type = initialExpression!!.type
+        }
 
-        return VariableDeclaration(ctx.Identifier().text, type ?: initialExpression!!.type, initialExpression)
+        symbolTable.addSymbol(name, SymbolInfo(type))
+
+        return VariableDeclaration(name, type, initialExpression)
     }
 
     override fun visitTypeDeclaration(ctx: TypeDeclarationContext): TypeDeclaration {
@@ -60,21 +70,33 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
             type.identifier = name
         }
 
+        symbolTable.addSymbol(name, SymbolInfo(type))
+
         return TypeDeclaration(name, type)
     }
 
     override fun visitRoutineDeclaration(ctx: RoutineDeclarationContext): RoutineDeclaration {
+        val name = ctx.Identifier().text
         val returnType = ctx.type()?.let { visitType(it) } ?: UnitType
-        val parameters = ctx.parameters()?.let {
-            it.parameterDeclaration().map { pd -> visitParameterDeclaration(pd) }
-        } ?: emptyList()
 
-        return RoutineDeclaration(
-            ctx.Identifier().text,
-            RoutineType(parameters.map { it.type }, returnType),
-            parameters,
-            visitBody(ctx.body())
-        )
+        symbolTable.enterScope()
+        try {
+            val parameters = ctx.parameters()?.let {
+                it.parameterDeclaration().map { pd -> visitParameterDeclaration(pd) }
+            } ?: emptyList()
+            val routineType = RoutineType(parameters.map { it.type }, returnType)
+
+            symbolTable.addSymbolToParentScope(name, SymbolInfo(routineType))
+
+            return RoutineDeclaration(
+                name,
+                routineType,
+                parameters,
+                visitBody(ctx.body())
+            )
+        } finally {
+            symbolTable.leaveScope()
+        }
     }
 
     override fun visitParameters(ctx: ParametersContext): IrEntry {
@@ -82,7 +104,12 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
     }
 
     override fun visitParameterDeclaration(ctx: ParameterDeclarationContext): ParameterDeclaration {
-        return ParameterDeclaration(ctx.Identifier().text, visitType(ctx.type()))
+        val name = ctx.Identifier().text
+        val type = visitType(ctx.type())
+
+        symbolTable.addSymbol(name, SymbolInfo(type))
+
+        return ParameterDeclaration(name, type)
     }
 
     override fun visitType(ctx: TypeContext): Type {
@@ -90,7 +117,8 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
             ctx.primitiveType() != null -> visitPrimitiveType(ctx.primitiveType())
             ctx.arrayType() != null -> visitArrayType(ctx.arrayType())
             ctx.recordType() != null -> visitRecordType(ctx.recordType())
-            ctx.Identifier() != null -> TODO()
+            ctx.Identifier() != null ->
+                symbolTable.lookup(ctx.Identifier().text)?.type ?: TODO()
 
             else -> throw IllegalStateException()
         }
@@ -153,7 +181,7 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
     }
 
     override fun visitWhileLoop(ctx: WhileLoopContext): WhileLoop {
-        return WhileLoop(visitExpression(ctx.expression()), visitBody(ctx.body()))
+        return WhileLoop(visitExpression(ctx.expression()), symbolTable.withScope { visitBody(ctx.body()) })
     }
 
     override fun visitForLoop(ctx: ForLoopContext): ForLoop {
@@ -163,7 +191,7 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
             range.REVERSE() != null,
             visitExpression(range.expression(0)),
             visitExpression(range.expression(1)),
-            visitBody(ctx.body())
+            symbolTable.withScope { visitBody(ctx.body()) }
         )
     }
 
@@ -174,8 +202,8 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
     override fun visitIfStatement(ctx: IfStatementContext): IfStatement {
         return IfStatement(
             visitExpression(ctx.expression()),
-            visitBody(ctx.main_body),
-            ctx.else_body?.let { visitBody(it) }
+            symbolTable.withScope { visitBody(ctx.main_body) },
+            ctx.else_body?.let {  symbolTable.withScope {  visitBody(it) } }
         )
     }
 
