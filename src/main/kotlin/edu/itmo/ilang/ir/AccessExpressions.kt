@@ -11,7 +11,7 @@ data class VariableAccessExpression(
 data class RecordFieldAccessExpression(
     val accessedExpression: AccessExpression,
     val recordType : RecordType,
-    val field: String,
+    var field: String,
 ) : AccessExpression {
     override val type = recordType.fields.first { it.first == field }.second
 }
@@ -19,7 +19,7 @@ data class RecordFieldAccessExpression(
 data class ArrayAccessExpression(
     val accessedExpression: AccessExpression,
     val arrayType: ArrayType,
-    val indexExpression: Expression
+    var indexExpression: Expression?
 ) : AccessExpression {
     override val type = arrayType.contentType
 }

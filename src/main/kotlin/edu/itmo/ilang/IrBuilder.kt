@@ -50,10 +50,6 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
             TODO()
         }
 
-        if (initialExpression?.type != type) {
-            TODO()
-        }
-
         if (type == null) {
             type = initialExpression!!.type
         }
@@ -139,7 +135,7 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
     }
 
     override fun visitBody(ctx: BodyContext): Body {
-        return Body(ctx.children.map { it.accept(this) as? BodyEntry
+        return Body(ctx.children.filter { it.text != ";" }.map { it.accept(this) as? BodyEntry
             ?: TODO() })
     }
 
@@ -267,6 +263,31 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
     }
 
     override fun visitModifiablePrimary(ctx: ModifiablePrimaryContext): AccessExpression {
-        TODO("Not yet implemented")
+        val firstSymbol = ctx.Identifier().first().text
+        val firstSymbolDeclaration = symbolTable.lookup(firstSymbol)?.declaration as? ValueDeclaration ?: TODO()
+        var result: AccessExpression = VariableAccessExpression(firstSymbolDeclaration)
+
+        for (child in ctx.children.drop(1)) {
+            if (child is TerminalNode) {
+                when (child.symbol.type) {
+                    Identifier -> {
+                        if (result is RecordFieldAccessExpression) {
+                            result.field = child.text
+                        }
+                    }
+                    DOT -> {
+                        result = RecordFieldAccessExpression(result, result.type as RecordType, "")
+                    }
+                    L_BRACKET -> {
+                        result = ArrayAccessExpression(result, result.type as ArrayType, null)
+                    }
+                }
+            }
+            if (child is ExpressionContext && result is ArrayAccessExpression) {
+                result.indexExpression = child.accept(this) as Expression
+            }
+        }
+
+        return result
     }
 }
