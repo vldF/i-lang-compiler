@@ -3,14 +3,11 @@ package edu.itmo.ilang
 import edu.itmo.ilang.ir.*
 import edu.itmo.ilang.ir.Nothing
 import edu.itmo.ilang.util.report
-import iLangParserVisitor
 import iLangParser.*
-import org.antlr.v4.runtime.tree.ErrorNode
-import org.antlr.v4.runtime.tree.ParseTree
-import org.antlr.v4.runtime.tree.RuleNode
+import iLangParserBaseVisitor
 import org.antlr.v4.runtime.tree.TerminalNode
 
-class IrBuilder : iLangParserVisitor<IrEntry> {
+class IrBuilder : iLangParserBaseVisitor<IrEntry>() {
 
     private val symbolTable = SymbolTable()
 
@@ -73,8 +70,7 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
         val name = ctx.Identifier().text
         val returnType = ctx.type()?.let { visitType(it) } ?: UnitType
 
-        symbolTable.enterScope()
-        try {
+        return symbolTable.withScope {
             val parameters = ctx.parameters()?.let {
                 it.parameterDeclaration().map { pd -> visitParameterDeclaration(pd) }
             } ?: emptyList()
@@ -84,14 +80,8 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
             symbolTable.addSymbolToParentScope(name, SymbolInfo(routineType, routineDeclaration))
 
             routineDeclaration.body = visitBody(ctx.body())
-            return routineDeclaration
-        } finally {
-            symbolTable.leaveScope()
+            routineDeclaration
         }
-    }
-
-    override fun visitParameters(ctx: ParametersContext): IrEntry {
-        TODO("Not yet implemented")
     }
 
     override fun visitParameterDeclaration(ctx: ParameterDeclarationContext): ParameterDeclaration {
@@ -199,10 +189,6 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
         )
     }
 
-    override fun visitRange(ctx: RangeContext): IrEntry {
-        TODO("Not yet implemented")
-    }
-
     override fun visitIfStatement(ctx: IfStatementContext): IfStatement {
         return IfStatement(
             visitExpression(ctx.expression()),
@@ -297,21 +283,5 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
         }
 
         return result
-    }
-
-    override fun visit(tree: ParseTree): IrEntry {
-        TODO("Not yet implemented")
-    }
-
-    override fun visitChildren(node: RuleNode): IrEntry {
-        TODO("Not yet implemented")
-    }
-
-    override fun visitTerminal(node: TerminalNode): IrEntry {
-        TODO("Not yet implemented")
-    }
-
-    override fun visitErrorNode(node: ErrorNode): IrEntry {
-        TODO("Not yet implemented")
     }
 }

@@ -46,11 +46,11 @@ class SymbolTable {
             .firstOrNull { scope -> scope[symbol]?.let { condition(it) } == true }?.get(symbol)
     }
 
-    fun enterScope() {
+    private fun enterScope() {
         symbols.add(mutableMapOf())
     }
 
-    fun leaveScope() {
+    private fun leaveScope() {
         symbols.removeLast()
     }
 }
