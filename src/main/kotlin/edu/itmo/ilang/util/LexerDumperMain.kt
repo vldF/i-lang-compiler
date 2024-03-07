@@ -1,3 +1,7 @@
+package edu.itmo.ilang.util
+
+import iLangLexer
+import iLangParser
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 import java.io.File

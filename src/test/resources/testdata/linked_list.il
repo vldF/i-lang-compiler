@@ -20,10 +20,13 @@ routine main() : bool is
     list.value := 1.3
 
     var list1 : LinkedList
-    node1.value := 2.5
+    list1.value := 2.5
 
     var list2 : LinkedList
-        node1.value := 5.0
+    list2.value := 5.0
+
+    list1.next := list2
+    list.next := list1
 
     var result : bool is false
 
