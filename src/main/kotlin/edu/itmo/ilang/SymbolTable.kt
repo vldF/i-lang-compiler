@@ -2,6 +2,7 @@ package edu.itmo.ilang
 
 import edu.itmo.ilang.ir.Declaration
 import edu.itmo.ilang.ir.Type
+import edu.itmo.ilang.util.report
 
 data class SymbolInfo(
     var type: Type,
@@ -30,7 +31,7 @@ class SymbolTable {
 
     private fun addSymbol(symbol: String, symbolInfo: SymbolInfo, scope: MutableMap<String, SymbolInfo>) {
         if (scope.containsKey(symbol)) {
-            TODO()
+            report("$symbol already defined in current scope")
         }
 
         scope[symbol] = symbolInfo

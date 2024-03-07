@@ -1,6 +1,7 @@
 package edu.itmo.ilang
 
 import edu.itmo.ilang.ir.*
+import edu.itmo.ilang.util.report
 
 object CompileTimeEvaluator {
     fun evaluateInt(expression: Expression): Int {
@@ -15,7 +16,7 @@ object CompileTimeEvaluator {
 
             is ModExpression -> evaluateInt(expression.left) % evaluateInt(expression.right)
 
-            else -> TODO()
+            else -> report("Cannot evaluate $expression in compile-time")
         }
     }
 }

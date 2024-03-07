@@ -2,6 +2,7 @@ package edu.itmo.ilang
 
 import edu.itmo.ilang.ir.*
 import edu.itmo.ilang.ir.Nothing
+import edu.itmo.ilang.util.report
 import iLangParserVisitor
 import iLangParser.*
 import org.antlr.v4.runtime.tree.ErrorNode
@@ -19,7 +20,8 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
 
             Program(ctx.children.map { it.accept(this)
                     as? Declaration
-                ?: TODO()})
+                ?: report("$it is not declaration")
+            })
         }
     }
 
@@ -41,7 +43,7 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
         var type = ctx.type()?.let { visitType(it) }
 
         if (initialExpression == null && type == null) {
-            TODO()
+            report("cannot infer type for $ctx")
         }
 
         if (type == null) {
@@ -106,7 +108,7 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
             ctx.arrayType() != null -> visitArrayType(ctx.arrayType())
             ctx.recordType() != null -> visitRecordType(ctx.recordType())
             ctx.Identifier() != null ->
-                symbolTable.lookup(ctx.Identifier().text)?.type ?: TODO()
+                symbolTable.lookup(ctx.Identifier().text)?.type ?: report("unknown symbol ${ctx.Identifier().text}")
 
             else -> throw IllegalStateException()
         }
@@ -134,7 +136,7 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
 
     override fun visitBody(ctx: BodyContext): Body {
         return Body(ctx.children.filter { it.text != ";" }.map { it.accept(this) as? BodyEntry
-            ?: TODO() })
+            ?: report("$it is not body entry") })
     }
 
     override fun visitStatement(ctx: StatementContext): Statement {
@@ -169,7 +171,7 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
     }
 
     private fun visitRoutineCall(routineName: String, args: List<ExpressionContext>?): RoutineCall {
-        val declaration = symbolTable.lookup(routineName)?.declaration ?: TODO()
+        val declaration = symbolTable.lookup(routineName)?.declaration ?: report("unknown symbol $routineName")
         val expressions = args?.map { visitExpression(it) } ?: emptyList()
 
         return RoutineCall(declaration as RoutineDeclaration, expressions)
@@ -266,7 +268,8 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
 
     override fun visitModifiablePrimary(ctx: ModifiablePrimaryContext): AccessExpression {
         val firstSymbol = ctx.Identifier().first().text
-        val firstSymbolDeclaration = symbolTable.lookup(firstSymbol)?.declaration as? ValueDeclaration ?: TODO()
+        val firstSymbolDeclaration = symbolTable.lookup(firstSymbol)?.declaration as? ValueDeclaration
+                ?: report("unknown symbol $firstSymbol")
         var result: AccessExpression = VariableAccessExpression(firstSymbolDeclaration)
 
         for (child in ctx.children.drop(1)) {
