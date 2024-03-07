@@ -37,8 +37,13 @@ class SymbolTable {
         scope[symbol] = symbolInfo
     }
 
-    fun lookup(symbol: String): SymbolInfo? {
-        return symbols.asReversed().firstNotNullOfOrNull { it[symbol] }
+    inline fun <reified T> lookup(symbol: String): SymbolInfo? {
+        return lookup(symbol) { it.declaration is T }
+    }
+
+    fun lookup(symbol: String, condition: (SymbolInfo) -> Boolean): SymbolInfo? {
+        return symbols.asReversed()
+            .firstOrNull { scope -> scope[symbol]?.let { condition(it) } == true }?.get(symbol)
     }
 
     fun enterScope() {

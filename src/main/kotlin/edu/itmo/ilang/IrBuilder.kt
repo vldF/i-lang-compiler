@@ -108,7 +108,9 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
             ctx.arrayType() != null -> visitArrayType(ctx.arrayType())
             ctx.recordType() != null -> visitRecordType(ctx.recordType())
             ctx.Identifier() != null ->
-                symbolTable.lookup(ctx.Identifier().text)?.type ?: report("unknown symbol ${ctx.Identifier().text}")
+                symbolTable.lookup(ctx.Identifier().text) {
+                    symbolInfo -> symbolInfo.declaration == null || symbolInfo.declaration is TypeDeclaration
+                }?.type ?: report("unknown symbol ${ctx.Identifier().text}")
 
             else -> throw IllegalStateException()
         }
@@ -171,7 +173,8 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
     }
 
     private fun visitRoutineCall(routineName: String, args: List<ExpressionContext>?): RoutineCall {
-        val declaration = symbolTable.lookup(routineName)?.declaration ?: report("unknown symbol $routineName")
+        val declaration = symbolTable.lookup<RoutineDeclaration>(routineName)?.declaration
+            ?: report("unknown symbol $routineName")
         val expressions = args?.map { visitExpression(it) } ?: emptyList()
 
         return RoutineCall(declaration as RoutineDeclaration, expressions)
@@ -268,7 +271,7 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
 
     override fun visitModifiablePrimary(ctx: ModifiablePrimaryContext): AccessExpression {
         val firstSymbol = ctx.Identifier().first().text
-        val firstSymbolDeclaration = symbolTable.lookup(firstSymbol)?.declaration as? ValueDeclaration
+        val firstSymbolDeclaration = symbolTable.lookup<ValueDeclaration>(firstSymbol)?.declaration as? ValueDeclaration
                 ?: report("unknown symbol $firstSymbol")
         var result: AccessExpression = VariableAccessExpression(firstSymbolDeclaration)
 
