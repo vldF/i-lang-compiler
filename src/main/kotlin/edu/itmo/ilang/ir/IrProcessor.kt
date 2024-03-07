@@ -34,7 +34,7 @@ interface IrProcessor<T> {
             is IntegralLiteral -> processIntegralLiteral(entry)
             is RealLiteral -> processRealLiteral(entry)
             is ArrayAccessExpression -> processArrayAccessExpression(entry)
-            is RecordFieldAccessExpression -> processRecordFieldAccessExpression(entry)
+            is FieldAccessExpression -> processFieldAccessExpression(entry)
             is UnaryMinusExpression -> processUnaryMinusExpression(entry)
             is Program -> processProgram(entry)
             BoolType -> processBoolType(entry as BoolType)
@@ -42,6 +42,7 @@ interface IrProcessor<T> {
             RealType -> processRealType(entry as RealType)
             UnitType -> processUnitType(entry as UnitType)
             MuParameter -> processMuParameter(entry as MuParameter)
+            Nothing -> processNothing(entry as Nothing)
             is RoutineType -> processRoutineType(entry)
             is ArrayType -> processArrayType(entry)
             is RecordType -> processRecordType(entry)
@@ -113,7 +114,7 @@ interface IrProcessor<T> {
 
     fun processArrayAccessExpression(arrayAccessExpression: ArrayAccessExpression): T
 
-    fun processRecordFieldAccessExpression(recordFieldAccessExpression: RecordFieldAccessExpression): T
+    fun processFieldAccessExpression(fieldAccessExpression: FieldAccessExpression): T
 
     fun processUnaryMinusExpression(unaryMinusExpression: UnaryMinusExpression): T
 
@@ -126,6 +127,8 @@ interface IrProcessor<T> {
     fun processUnitType(unitType: UnitType): T
 
     fun processMuParameter(muParameter: MuParameter): T
+
+    fun processNothing(nothing: Nothing): T
 
     fun processRoutineType(routineType: RoutineType): T
 

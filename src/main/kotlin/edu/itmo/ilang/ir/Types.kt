@@ -14,6 +14,8 @@ data object UnitType : PrimitiveType
 
 data object MuParameter : Type
 
+data object Nothing : Type
+
 sealed interface UserType : Type {
     var identifier: String?
 }

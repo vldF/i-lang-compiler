@@ -8,7 +8,7 @@ data class Assignment(
 ) : Statement
 
 data class Return(
-    val expression: Expression
+    val expression: Expression?
 ) : Statement
 
 data object Break : Statement

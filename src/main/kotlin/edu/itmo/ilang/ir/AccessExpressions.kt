@@ -8,12 +8,17 @@ data class VariableAccessExpression(
     override val type = variable.type
 }
 
-data class RecordFieldAccessExpression(
+data class FieldAccessExpression(
     val accessedExpression: AccessExpression,
-    val recordType : RecordType,
+    val accessedType : Type,
     var field: String,
 ) : AccessExpression {
-    override val type = recordType.fields.first { it.first == field }.second
+    override val type
+        get() = when (accessedType) {
+            is RecordType -> accessedType.fields.first { it.first == field }.second
+            is ArrayType -> if (field == "size") IntegerType else Nothing
+            else -> TODO()
+        }
 }
 
 data class ArrayAccessExpression(

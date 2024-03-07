@@ -1,6 +1,7 @@
 package edu.itmo.ilang
 
 import edu.itmo.ilang.ir.*
+import edu.itmo.ilang.ir.Nothing
 import iLangParserVisitor
 import iLangParser.*
 import org.antlr.v4.runtime.tree.ErrorNode
@@ -14,10 +15,19 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
 
     override fun visitProgram(ctx: ProgramContext): Program {
         return symbolTable.withScope {
+            addPredefinedSymbols()
+
             Program(ctx.children.map { it.accept(this)
                     as? Declaration
                 ?: TODO()})
         }
+    }
+
+    private fun addPredefinedSymbols() {
+        symbolTable.addSymbol("bool", SymbolInfo(BoolType, TypeDeclaration("bool", BoolType)))
+        symbolTable.addSymbol("real", SymbolInfo(RealType, TypeDeclaration("real", RealType)))
+        symbolTable.addSymbol("integer", SymbolInfo(IntegerType, TypeDeclaration("integer", IntegerType)))
+        symbolTable.addSymbol("uninitialized", SymbolInfo(Nothing, VariableDeclaration("uninitialized", Nothing, null)))
     }
 
     override fun visitSimpleDeclaration(ctx: SimpleDeclarationContext): Declaration {
@@ -143,7 +153,7 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
     }
 
     override fun visitReturnStatement(ctx: ReturnStatementContext): Return {
-        return Return(visitExpression(ctx.expression()))
+        return Return(ctx.expression()?.let { visitExpression(it) })
     }
 
     override fun visitAssignment(ctx: AssignmentContext): Assignment {
@@ -171,12 +181,16 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
 
     override fun visitForLoop(ctx: ForLoopContext): ForLoop {
         val range = ctx.range()
+        val loopVarName = ctx.Identifier().text
         return ForLoop(
-            ctx.Identifier().text,
+            loopVarName,
             range.REVERSE() != null,
             visitExpression(range.expression(0)),
             visitExpression(range.expression(1)),
-            symbolTable.withScope { visitBody(ctx.body()) }
+            symbolTable.withScope {
+                symbolTable.addSymbol(loopVarName, SymbolInfo(IntegerType, VariableDeclaration(loopVarName, IntegerType, null)))
+                visitBody(ctx.body())
+            }
         )
     }
 
@@ -259,12 +273,12 @@ class IrBuilder : iLangParserVisitor<IrEntry> {
             if (child is TerminalNode) {
                 when (child.symbol.type) {
                     Identifier -> {
-                        if (result is RecordFieldAccessExpression) {
+                        if (result is FieldAccessExpression) {
                             result.field = child.text
                         }
                     }
                     DOT -> {
-                        result = RecordFieldAccessExpression(result, result.type as RecordType, "")
+                        result = FieldAccessExpression(result, result.type, "")
                     }
                     L_BRACKET -> {
                         result = ArrayAccessExpression(result, result.type as ArrayType, null)

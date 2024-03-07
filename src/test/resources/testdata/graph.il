@@ -11,7 +11,7 @@ end
 
 routine findNodeByKey(root : TreeNode, key : integer) : MayBeNode is
     if root.key = key then
-        var res is MayBeNode
+        var res : MayBeNode
         res.hasValue := true
         res.node := root
 
