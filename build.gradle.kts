@@ -1,9 +1,19 @@
+import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
+
 plugins {
     id("org.jetbrains.kotlin.jvm") version "1.9.10"
     id("antlr")
     id("org.jetbrains.gradle.plugin.idea-ext") version "1.1.7"
+    id("org.bytedeco.gradle-javacpp-platform") version ("1.5.10")
     application
 }
+
+val llvmVersion = "17.0.6-1.5.10"
+
+ext {
+    this.set("javacppPlatform", getJavacppPlatformClassifier())
+}
+
 
 repositories {
     // Use Maven Central for resolving dependencies.
@@ -23,6 +33,7 @@ dependencies {
 
     // This dependency is used by the application.
     implementation("com.google.guava:guava:32.1.1-jre")
+    implementation("org.bytedeco:llvm-platform:17.0.6-1.5.10")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.
@@ -63,5 +74,31 @@ task<JavaExec>("generateTests") {
 tasks.test {
     testLogging {
         events("passed", "skipped", "failed", "standardOut", "standardError")
+    }
+}
+
+/**
+ * Some of available classifiers are here
+ * https://github.com/bytedeco/javacpp-presets/blob/master/llvm/platform/pom.xml
+ */
+fun getJavacppPlatformClassifier(): String {
+    val currentOSString = System.getProperty("os.name").toLowerCaseAsciiOnly()
+    val osArch = System.getProperty("os.arch")
+
+    return when {
+        currentOSString.contains("win") -> "windows-x86_64"
+        currentOSString.contains("linux") -> {
+            when {
+                osArch.contains("aarch64") -> "linux-arm64"
+                else -> "linux-x86_64"
+            }
+        }
+        currentOSString.contains("mac") -> {
+            when {
+                osArch.contains("aarch64") -> "macosx-arm64"
+                else -> "macosx-x86_64"
+            }
+        }
+        else -> error("unsupported os $currentOSString and architecture $osArch")
     }
 }
