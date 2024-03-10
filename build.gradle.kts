@@ -14,6 +14,12 @@ ext {
     this.set("javacppPlatform", getJavacppPlatformClassifier())
 }
 
+idea {
+    module {
+        isDownloadSources = true
+        isDownloadJavadoc = true
+    }
+}
 
 repositories {
     mavenCentral()
