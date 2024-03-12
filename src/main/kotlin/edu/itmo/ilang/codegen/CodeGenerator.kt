@@ -29,6 +29,7 @@ class CodeGenerator {
                     else -> {}
                 }
             }
+            LLVMDumpModule(module)
         } finally {
             deinitializeLlvm()
         }
@@ -53,6 +54,11 @@ class CodeGenerator {
         val routineName = routineDeclaration.name
         val function = LLVMAddFunction(module, routineName, routineSignature)
         LLVMSetFunctionCallConv(function, LLVMCCallConv)
+
+        for ((i, param) in routineDeclaration.parameters.withIndex()) {
+            val paramValue = LLVMGetParam(function, i)
+            codegenContext.storeValueDecl(param, paramValue)
+        }
 
         generateBody(routineDeclaration.body!!, function)
 
@@ -180,7 +186,9 @@ class CodeGenerator {
             is NotEqualsExpression -> equalBasedBinaryOperator(expression.left, expression.right, LLVMIntNE, LLVMRealUNE)
             is ArrayAccessExpression -> TODO()
             is FieldAccessExpression -> TODO()
-            is VariableAccessExpression -> TODO()
+            is VariableAccessExpression -> {
+                codegenContext.resolveValue(expression.variable)
+            }
             is AndExpression -> TODO()
             is DivExpression -> TODO()
             is OrExpression -> TODO()
@@ -241,9 +249,10 @@ class CodeGenerator {
     }
 
     inner class PrimaryTypes {
-        val integerType = LLVMInt32TypeInContext(llvmContext)
-        val realType = LLVMDoubleTypeInContext(llvmContext)
-        val boolType = LLVMInt1TypeInContext(llvmContext)
+        val integerType: LLVMTypeRef = LLVMInt32TypeInContext(llvmContext)
+        val realType: LLVMTypeRef = LLVMDoubleTypeInContext(llvmContext)
+        val boolType: LLVMTypeRef = LLVMInt1TypeInContext(llvmContext)
+        val voidType: LLVMTypeRef = LLVMVoidTypeInContext(llvmContext)
     }
 
     inner class Constants {
@@ -263,6 +272,7 @@ class CodeGenerator {
             is IntegerType -> primaryTypes.integerType
             is RealType -> primaryTypes.realType
             is BoolType -> primaryTypes.boolType
+            UnitType -> primaryTypes.voidType
             else -> report("unsupported type $this")
         }
 
