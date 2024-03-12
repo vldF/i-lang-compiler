@@ -37,6 +37,11 @@ class iLangCodeGenTests {
     }
     
     @Test
+    fun dbg_test() {
+        CodeGenTestsRunner.run("dbg")
+    }
+    
+    @Test
     fun fact_test() {
         CodeGenTestsRunner.run("fact")
     }
