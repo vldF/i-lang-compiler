@@ -37,6 +37,11 @@ class iLangParserTests {
     }
     
     @Test
+    fun dbg_test() {
+        ParserTestsRunner.run("dbg")
+    }
+    
+    @Test
     fun fact_test() {
         ParserTestsRunner.run("fact")
     }

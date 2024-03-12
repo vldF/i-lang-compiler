@@ -37,6 +37,11 @@ class iLangIrBuilderTests {
     }
     
     @Test
+    fun dbg_test() {
+        IrBuilderTestsRunner.run("dbg")
+    }
+    
+    @Test
     fun fact_test() {
         IrBuilderTestsRunner.run("fact")
     }
