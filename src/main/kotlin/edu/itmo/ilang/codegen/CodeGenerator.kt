@@ -11,12 +11,12 @@ import org.bytedeco.llvm.global.LLVM.*
 
 class CodeGenerator {
     // todo: add debug renderer for a function CFG preview with LLVMViewFunctionCFG
-    private val llvmContext = LLVMContextCreate()
-    private val module = LLVMModuleCreateWithNameInContext("i-lang-program", llvmContext)
-    private val builder = LLVMCreateBuilderInContext(llvmContext)
+    private val llvmContext by lazy { LLVMContextCreate() }
+    private val module by lazy { LLVMModuleCreateWithNameInContext("i-lang-program", llvmContext) }
+    private val builder by lazy { LLVMCreateBuilderInContext(llvmContext) }
 
-    private val primaryTypes = PrimaryTypes()
-    private val constants = Constants()
+    private val primaryTypes by lazy { PrimaryTypes() }
+    private val constants by lazy { Constants() }
 
     private var codegenContext = CodeGenContext(routine = null)
 
@@ -29,16 +29,22 @@ class CodeGenerator {
             }
 
             LLVMDumpModule(module)
+
+            val moduleVerificationMessage = ByteArray(1024)
+            val verificationResult = LLVMVerifyModule(module, LLVMPrintMessageAction, moduleVerificationMessage)
+            if (verificationResult != 0) {
+                report("function verification error!\n${moduleVerificationMessage.decodeToString()}")
+            }
         } finally {
             deinitializeLlvm()
         }
     }
 
     private fun initializeLlvm() {
-        LLVMLinkInMCJIT()
+        LLVMInitializeNativeTarget()
         LLVMInitializeNativeAsmPrinter()
         LLVMInitializeNativeAsmParser()
-        LLVMInitializeNativeTarget()
+//        LLVMSetDataLayout(module, )
     }
 
     private fun deinitializeLlvm() {
@@ -73,6 +79,11 @@ class CodeGenerator {
         processBody(routineDeclaration.body!!)
 
         popContext()
+
+        val verificationResult = LLVMVerifyFunction(function, LLVMPrintMessageAction)
+        if (verificationResult != 0) {
+            report("function verification error!")
+        }
     }
 
     private fun processBody(body: Body) {
@@ -231,7 +242,11 @@ class CodeGenerator {
             is ArrayAccessExpression -> TODO()
             is FieldAccessExpression -> TODO()
             is VariableAccessExpression -> {
-                codegenContext.resolveValue(expression.variable)
+                val variable = expression.variable
+                val storeValue = codegenContext.resolveValue(variable)
+                val valueType = LLVMGetAllocatedType(storeValue)
+
+                LLVMBuildLoad2(builder, valueType, storeValue, variable.name + "_load")
             }
             is AndExpression -> TODO()
             is DivExpression -> TODO()
@@ -260,7 +275,7 @@ class CodeGenerator {
                     "cast left value to floating point"
                 )
 
-                return opBuilderForFP(builder, leftValue, rightValue, "binary op")
+                return opBuilderForFP(builder, leftValue, rightValue, "binary-op")
             }
         } else {
             if (right.type is IntegerType) {
@@ -271,11 +286,11 @@ class CodeGenerator {
                     "cast right value to integer"
                 )
 
-                return opBuilderForFP(builder, leftValue, rightValue, "binary op")
+                return opBuilderForFP(builder, leftValue, rightValue, "binary-op")
             }
         }
 
-        return opBuilderForIntegers(builder, leftValue, rightValue, "binary op")
+        return opBuilderForIntegers(builder, leftValue, rightValue, "binary-op")
     }
 
     private fun equalBasedBinaryOperator(
