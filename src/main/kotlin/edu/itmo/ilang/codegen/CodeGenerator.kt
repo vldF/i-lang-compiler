@@ -2,11 +2,9 @@ package edu.itmo.ilang.codegen
 
 import edu.itmo.ilang.ir.*
 import edu.itmo.ilang.util.report
+import org.bytedeco.javacpp.BytePointer
 import org.bytedeco.javacpp.PointerPointer
-import org.bytedeco.llvm.LLVM.LLVMBasicBlockRef
-import org.bytedeco.llvm.LLVM.LLVMBuilderRef
-import org.bytedeco.llvm.LLVM.LLVMTypeRef
-import org.bytedeco.llvm.LLVM.LLVMValueRef
+import org.bytedeco.llvm.LLVM.*
 import org.bytedeco.llvm.global.LLVM.*
 
 class CodeGenerator {
@@ -35,6 +33,32 @@ class CodeGenerator {
             if (verificationResult != 0) {
                 report("function verification error!\n${moduleVerificationMessage.decodeToString()}")
             }
+
+            val triple = LLVMGetDefaultTargetTriple()
+            val target = LLVMTargetRef()
+
+            val error = BytePointer()
+
+            if (LLVMGetTargetFromTriple(triple, target, error) != 0) {
+                println("Failed to get target from triple: " + error.getString())
+                LLVMDisposeMessage(error)
+                return
+            }
+
+            val cpu = "generic"
+            val cpuFeatures = ""
+            val optimizationLevel = 0
+            val tm = LLVMCreateTargetMachine(
+                target, triple.string, cpu, cpuFeatures, optimizationLevel,
+                LLVMRelocDefault, LLVMCodeModelDefault
+            )
+
+            val outputFile = BytePointer("./sum.o")
+            if (LLVMTargetMachineEmitToFile(tm, module, outputFile, LLVMObjectFile, error) != 0) {
+                System.err.println("Failed to emit relocatable object file: " + error.string)
+                LLVMDisposeMessage(error)
+                return
+            }
         } finally {
             deinitializeLlvm()
         }
@@ -44,6 +68,9 @@ class CodeGenerator {
         LLVMInitializeNativeTarget()
         LLVMInitializeNativeAsmPrinter()
         LLVMInitializeNativeAsmParser()
+
+        val targetTriple = LLVMGetDefaultTargetTriple()
+        LLVMSetTarget(module, targetTriple)
     }
 
     private fun deinitializeLlvm() {
@@ -264,7 +291,7 @@ class CodeGenerator {
         left: Expression,
         right: Expression,
         opBuilderForIntegers: (LLVMBuilderRef, LLVMValueRef, LLVMValueRef, String) -> LLVMValueRef,
-        opBuilderForFP: (LLVMBuilderRef, LLVMValueRef, LLVMValueRef, String) -> LLVMValueRef
+        opBuilderForFP: (LLVMBuilderRef, LLVMValueRef, LLVMValueRef, String) -> LLVMValueRef,
     ): LLVMValueRef {
         var leftValue = processExpression(left)
         var rightValue = processExpression(right)
@@ -300,7 +327,7 @@ class CodeGenerator {
         left: Expression,
         right: Expression,
         intOp: Int,
-        floatOp: Int
+        floatOp: Int,
     ): LLVMValueRef {
         return processArithmeticBinaryExpressionWithCast(
             left,
