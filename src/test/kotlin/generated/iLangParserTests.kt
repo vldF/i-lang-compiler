@@ -1,83 +1,84 @@
 import org.junit.jupiter.api.Test
+import runners.ParserTestsRunner
 
 // DO NOT MODIFY THIS FILE MANUALLY
 // Edit TestsGenerator.kt instead
 
 @Suppress("ClassName")
-class iLangIrBuilderTests {
+class iLangParserTests {
     @Test
     fun array_any_all_test() {
-        IrBuilderTestsRunner.run("array_any_all")
+        ParserTestsRunner.run("array_any_all")
     }
     
     @Test
     fun array_avg_test() {
-        IrBuilderTestsRunner.run("array_avg")
+        ParserTestsRunner.run("array_avg")
     }
     
     @Test
     fun array_count_test() {
-        IrBuilderTestsRunner.run("array_count")
+        ParserTestsRunner.run("array_count")
     }
     
     @Test
     fun array_linear_search_test() {
-        IrBuilderTestsRunner.run("array_linear_search")
+        ParserTestsRunner.run("array_linear_search")
     }
     
     @Test
     fun array_min_max_test() {
-        IrBuilderTestsRunner.run("array_min_max")
+        ParserTestsRunner.run("array_min_max")
     }
     
     @Test
     fun bubble_sort_test() {
-        IrBuilderTestsRunner.run("bubble_sort")
+        ParserTestsRunner.run("bubble_sort")
     }
     
     @Test
     fun fact_test() {
-        IrBuilderTestsRunner.run("fact")
+        ParserTestsRunner.run("fact")
     }
     
     @Test
     fun fib_test() {
-        IrBuilderTestsRunner.run("fib")
+        ParserTestsRunner.run("fib")
     }
     
     @Test
     fun full_adder_test() {
-        IrBuilderTestsRunner.run("full_adder")
+        ParserTestsRunner.run("full_adder")
     }
     
     @Test
     fun gcd_test() {
-        IrBuilderTestsRunner.run("gcd")
+        ParserTestsRunner.run("gcd")
     }
     
     @Test
     fun graph_test() {
-        IrBuilderTestsRunner.run("graph")
+        ParserTestsRunner.run("graph")
     }
     
     @Test
     fun is_prime_test() {
-        IrBuilderTestsRunner.run("is_prime")
+        ParserTestsRunner.run("is_prime")
     }
     
     @Test
     fun linked_list_test() {
-        IrBuilderTestsRunner.run("linked_list")
+        ParserTestsRunner.run("linked_list")
     }
     
     @Test
     fun pow_test() {
-        IrBuilderTestsRunner.run("pow")
+        ParserTestsRunner.run("pow")
     }
     
     @Test
     fun quick_sort_test() {
-        IrBuilderTestsRunner.run("quick_sort")
+        ParserTestsRunner.run("quick_sort")
     }
     
     

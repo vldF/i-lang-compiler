@@ -1,3 +1,7 @@
+package runners
+
+import iLangLexer
+import iLangParser
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.atn.ATNConfigSet
 import org.antlr.v4.runtime.dfa.DFA
@@ -5,10 +9,10 @@ import org.junit.jupiter.api.Assertions
 import java.io.File
 import java.util.*
 
-object ParserTestsRunner {
+object ParserTestsRunner : ITestRunner {
     private const val FILE_EXTENSION = ".il"
 
-    fun run(testName: String) {
+    override fun run(testName: String) {
         val testFilePathStr = "/testdata/$testName$FILE_EXTENSION"
         val testFilePath = this::class.java.getResource(testFilePathStr)?.toURI()
             ?: error("can't find resource '$testFilePathStr'")
