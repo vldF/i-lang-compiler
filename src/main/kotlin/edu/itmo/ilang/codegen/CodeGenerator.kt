@@ -11,9 +11,9 @@ import org.bytedeco.llvm.global.LLVM.*
 
 class CodeGenerator {
     // todo: add debug renderer for a function CFG preview with LLVMViewFunctionCFG
-    private val llvmContext by lazy { LLVMContextCreate() }
-    private val module by lazy { LLVMModuleCreateWithNameInContext("i-lang-program", llvmContext) }
-    private val builder by lazy { LLVMCreateBuilderInContext(llvmContext) }
+    private val llvmContext = LLVMContextCreate()
+    private val module = LLVMModuleCreateWithNameInContext("i-lang-program", llvmContext)
+    private val builder = LLVMCreateBuilderInContext(llvmContext)
 
     private val primaryTypes by lazy { PrimaryTypes() }
     private val constants by lazy { Constants() }
@@ -44,7 +44,6 @@ class CodeGenerator {
         LLVMInitializeNativeTarget()
         LLVMInitializeNativeAsmPrinter()
         LLVMInitializeNativeAsmParser()
-//        LLVMSetDataLayout(module, )
     }
 
     private fun deinitializeLlvm() {
@@ -244,8 +243,11 @@ class CodeGenerator {
             is VariableAccessExpression -> {
                 val variable = expression.variable
                 val storeValue = codegenContext.resolveValue(variable)
-                val valueType = LLVMGetAllocatedType(storeValue)
+                if (variable is ParameterDeclaration) {
+                    return storeValue
+                }
 
+                val valueType = LLVMGetAllocatedType(storeValue)
                 LLVMBuildLoad2(builder, valueType, storeValue, variable.name + "_load")
             }
             is AndExpression -> TODO()
