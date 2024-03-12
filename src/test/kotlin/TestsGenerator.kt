@@ -1,3 +1,4 @@
+import runners.CodeGenTestsRunner
 import runners.ITestRunner
 import runners.IrBuilderTestsRunner
 import runners.ParserTestsRunner
@@ -16,6 +17,7 @@ fun main() {
 
     generateParserTests(testCases)
     generateIrBuilderTests(testCases)
+    generateCodegenTests(testCases)
 }
 
 private fun generateParserTests(testCases: Array<File>) {
@@ -24,6 +26,10 @@ private fun generateParserTests(testCases: Array<File>) {
 
 private fun generateIrBuilderTests(testCases: Array<File>) {
     generateTests(testCases, "iLangIrBuilderTests", IrBuilderTestsRunner::class)
+}
+
+private fun generateCodegenTests(testCases: Array<File>) {
+    generateTests(testCases, "iLangCodeGenTests", CodeGenTestsRunner::class)
 }
 
 private fun generateTests(testCases: Array<File>, testClassName: String, testRunner: KClass<out ITestRunner>) {

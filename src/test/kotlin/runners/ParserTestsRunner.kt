@@ -10,10 +10,8 @@ import java.io.File
 import java.util.*
 
 object ParserTestsRunner : ITestRunner {
-    private const val FILE_EXTENSION = ".il"
-
     override fun run(testName: String) {
-        val testFilePathStr = "/testdata/$testName$FILE_EXTENSION"
+        val testFilePathStr = "/testdata/$testName$I_LANG_FILE_EXT"
         val testFilePath = this::class.java.getResource(testFilePathStr)?.toURI()
             ?: error("can't find resource '$testFilePathStr'")
         val programText = File(testFilePath).readText()
