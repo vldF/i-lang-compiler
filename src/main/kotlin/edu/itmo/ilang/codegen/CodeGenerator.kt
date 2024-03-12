@@ -24,11 +24,9 @@ class CodeGenerator {
 
         try {
             for (declaration in program.declarations) {
-                when (declaration) {
-                    is RoutineDeclaration -> processRoutineDeclaration(declaration)
-                    else -> {}
-                }
+                processDeclaration(declaration)
             }
+
             LLVMDumpModule(module)
         } finally {
             deinitializeLlvm()
@@ -47,6 +45,13 @@ class CodeGenerator {
         LLVMContextDispose(llvmContext)
     }
 
+    private fun processDeclaration(declaration: Declaration) {
+        when (declaration) {
+            is RoutineDeclaration -> processRoutineDeclaration(declaration)
+            else -> {}
+        }
+    }
+
     private fun processRoutineDeclaration(routineDeclaration: RoutineDeclaration) {
         pushContext(routineDeclaration)
 
@@ -60,12 +65,12 @@ class CodeGenerator {
             codegenContext.storeValueDecl(param, paramValue)
         }
 
-        generateBody(routineDeclaration.body!!, function)
+        generateFunctionBody(routineDeclaration.body!!, function)
 
         popContext()
     }
 
-    private fun generateBody(body: Body, parentFunction: LLVMValueRef) {
+    private fun generateFunctionBody(body: Body, parentFunction: LLVMValueRef) {
         val entryBlock = LLVMAppendBasicBlockInContext(llvmContext, parentFunction, "entry")
         LLVMPositionBuilderAtEnd(builder, entryBlock)
 
@@ -74,9 +79,9 @@ class CodeGenerator {
                 is IfStatement -> processIfStatement(statement)
                 is Assignment -> processAssignment(statement)
                 is VariableDeclaration -> processVariableDeclaration(statement)
+                is Return -> processReturn(statement)
                 is ForLoop -> TODO()
                 is WhileLoop -> TODO()
-                is Return -> TODO()
                 Break -> TODO()
                 Continue -> TODO()
                 is RoutineCall -> TODO()
@@ -101,6 +106,16 @@ class CodeGenerator {
 
         val initValue = processExpression(initializer)
         LLVMBuildStore(builder, initValue, allocaValue)
+    }
+
+    private fun processReturn(statement: Return) {
+        val expression = statement.expression
+        if (expression != null) {
+            val value = processExpression(expression)
+            LLVMBuildRet(builder, value)
+        } else {
+            LLVMBuildRetVoid(builder)
+        }
     }
 
     private fun processAssignment(statement: Assignment) {
