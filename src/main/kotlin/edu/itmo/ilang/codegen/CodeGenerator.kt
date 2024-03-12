@@ -81,6 +81,7 @@ class CodeGenerator {
 
         val verificationResult = LLVMVerifyFunction(function, LLVMPrintMessageAction)
         if (verificationResult != 0) {
+            LLVMDumpValue(function)
             report("function verification error!")
         }
     }
@@ -109,7 +110,7 @@ class CodeGenerator {
 
         val conditionExpr = statement.condition
         val conditionValue = processExpression(conditionExpr)
-        val cmpExpr = LLVMBuildICmp(builder, LLVMIntEQ, conditionValue, constants.iOne, "condition")
+        val cmpExpr = LLVMBuildICmp(builder, LLVMIntEQ, conditionValue, constants.trueConst, "condition")
 
         val function = getLastFunction()
 
@@ -169,7 +170,7 @@ class CodeGenerator {
 
         val rhs = statement.rhs
         val rhv = processExpression(rhs)
-        LLVMBuildStore(builder, lhv, rhv)
+        LLVMBuildStore(builder, rhv, lhv)
     }
 
     private fun processExpression(expression: Expression): LLVMValueRef {
@@ -317,6 +318,9 @@ class CodeGenerator {
     }
 
     inner class Constants {
+        val falseConst: LLVMValueRef = LLVMConstInt(primaryTypes.boolType, 0, /* SignExtend = */ 0)
+        val trueConst: LLVMValueRef = LLVMConstInt(primaryTypes.boolType, 1, /* SignExtend = */ 0)
+
         val iZero: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 0, /* SignExtend = */ 0)
         val iOne: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 1, /* SignExtend = */ 0)
 
