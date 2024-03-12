@@ -178,11 +178,11 @@ class CodeGenerator {
                 val nested = processExpression(expression.nestedExpression)
                 when (expression.type) {
                     is RealType -> {
-                        LLVMBuildFSub(builder, constants.fZzero, nested, "unary-minus")
+                        LLVMBuildFSub(builder, constants.rZero, nested, "unary-minus")
                     }
 
                     is IntegerType -> {
-                        LLVMBuildSub(builder, constants.iZzero, nested, "unary-minus")
+                        LLVMBuildSub(builder, constants.iZero, nested, "unary-minus")
                     }
 
                     else -> report("can't use unary minus with $expression")
@@ -300,11 +300,11 @@ class CodeGenerator {
     }
 
     inner class Constants {
-        val iZzero = LLVMConstInt(primaryTypes.integerType, 0, /* SignExtend = */ 0)
-        val iOne = LLVMConstInt(primaryTypes.integerType, 1, /* SignExtend = */ 0)
+        val iZero: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 0, /* SignExtend = */ 0)
+        val iOne: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 1, /* SignExtend = */ 0)
 
-        val fZzero = LLVMConstInt(primaryTypes.doubleType, 0, /* SignExtend = */ 0)
-        val fOne = LLVMConstInt(primaryTypes.doubleType, 1, /* SignExtend = */ 0)
+        val rZero: LLVMValueRef = LLVMConstReal(primaryTypes.doubleType, 0.0)
+        val rOne: LLVMValueRef = LLVMConstReal(primaryTypes.doubleType, 1.0)
     }
 
     private val RoutineDeclaration.signatureType: LLVMTypeRef
