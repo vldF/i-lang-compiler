@@ -3,6 +3,7 @@ package edu.itmo.ilang.codegen
 import edu.itmo.ilang.ir.*
 import edu.itmo.ilang.util.report
 import org.bytedeco.javacpp.PointerPointer
+import org.bytedeco.llvm.LLVM.LLVMBasicBlockRef
 import org.bytedeco.llvm.LLVM.LLVMBuilderRef
 import org.bytedeco.llvm.LLVM.LLVMTypeRef
 import org.bytedeco.llvm.LLVM.LLVMValueRef
@@ -65,15 +66,16 @@ class CodeGenerator {
             codegenContext.storeValueDecl(param, paramValue)
         }
 
-        generateFunctionBody(routineDeclaration.body!!, function)
+        val entryBlock = createBasicBlock("entry")
+        LLVMAppendExistingBasicBlock(function, entryBlock)
+        LLVMPositionBuilderAtEnd(builder, entryBlock)
+
+        processBody(routineDeclaration.body!!)
 
         popContext()
     }
 
-    private fun generateFunctionBody(body: Body, parentFunction: LLVMValueRef) {
-        val entryBlock = LLVMAppendBasicBlockInContext(llvmContext, parentFunction, "entry")
-        LLVMPositionBuilderAtEnd(builder, entryBlock)
-
+    private fun processBody(body: Body) {
         for (statement in body.statements) {
             when (statement) {
                 is IfStatement -> processIfStatement(statement)
@@ -91,8 +93,35 @@ class CodeGenerator {
     }
 
     private fun processIfStatement(statement: IfStatement) {
-        val conditionExpr = processExpression(statement.condition)
-        val cmpExpr = LLVMBuildICmp(builder, LLVMIntEQ, conditionExpr, constants.one, statement.condition.toString())
+        val mergeBlock = createBasicBlock("if-merge")
+        val thenBlock = createBasicBlock("if-then")
+        val elseBlock = createBasicBlock("if-else")
+
+        val conditionExpr = statement.condition
+        val conditionValue = processExpression(conditionExpr)
+        val cmpExpr = LLVMBuildICmp(builder, LLVMIntEQ, conditionValue, constants.iOne, "condition")
+
+        val function = getLastFunction()
+
+        LLVMBuildCondBr(builder, cmpExpr, thenBlock, elseBlock)
+
+        pushContext()
+        LLVMAppendExistingBasicBlock(function, thenBlock)
+        LLVMPositionBuilderAtEnd(builder, thenBlock)
+        processBody(statement.thenBody)
+        LLVMBuildBr(builder, mergeBlock)
+        popContext()
+
+        pushContext()
+        LLVMAppendExistingBasicBlock(function, elseBlock)
+        LLVMPositionBuilderAtEnd(builder, elseBlock)
+        processBody(statement.elseBody ?: Body.EMPTY)
+        getLastBasicBlock()
+        LLVMBuildBr(builder, mergeBlock)
+        popContext()
+
+        LLVMAppendExistingBasicBlock(function, mergeBlock)
+        LLVMPositionBuilderAtEnd(builder, mergeBlock)
     }
 
     private fun processVariableDeclaration(declaration: VariableDeclaration) {
@@ -143,17 +172,17 @@ class CodeGenerator {
                 LLVMConstInt(primaryTypes.boolType, intValue, /* SignExtend = */ 0)
             }
             is RealLiteral -> {
-                LLVMConstReal(primaryTypes.realType, expression.value)
+                LLVMConstReal(primaryTypes.doubleType, expression.value)
             }
             is UnaryMinusExpression -> {
                 val nested = processExpression(expression.nestedExpression)
                 when (expression.type) {
                     is RealType -> {
-                        LLVMBuildFSub(builder, constants.zero, nested, expression.toString())
+                        LLVMBuildFSub(builder, constants.fZzero, nested, "unary-minus")
                     }
 
                     is IntegerType -> {
-                        LLVMBuildSub(builder, constants.zero, nested, expression.toString())
+                        LLVMBuildSub(builder, constants.iZzero, nested, "unary-minus")
                     }
 
                     else -> report("can't use unary minus with $expression")
@@ -227,7 +256,7 @@ class CodeGenerator {
                 leftValue = LLVMBuildSIToFP(
                     builder,
                     leftValue,
-                    primaryTypes.realType,
+                    primaryTypes.doubleType,
                     "cast left value to floating point"
                 )
 
@@ -238,7 +267,7 @@ class CodeGenerator {
                 rightValue = LLVMBuildSIToFP(
                     builder,
                     rightValue,
-                    primaryTypes.realType,
+                    primaryTypes.doubleType,
                     "cast right value to integer"
                 )
 
@@ -265,14 +294,17 @@ class CodeGenerator {
 
     inner class PrimaryTypes {
         val integerType: LLVMTypeRef = LLVMInt32TypeInContext(llvmContext)
-        val realType: LLVMTypeRef = LLVMDoubleTypeInContext(llvmContext)
+        val doubleType: LLVMTypeRef = LLVMDoubleTypeInContext(llvmContext)
         val boolType: LLVMTypeRef = LLVMInt1TypeInContext(llvmContext)
         val voidType: LLVMTypeRef = LLVMVoidTypeInContext(llvmContext)
     }
 
     inner class Constants {
-        val zero = LLVMConstInt(primaryTypes.integerType, 1, /* SignExtend = */ 0)
-        val one = LLVMConstInt(primaryTypes.integerType, 1, /* SignExtend = */ 0)
+        val iZzero = LLVMConstInt(primaryTypes.integerType, 0, /* SignExtend = */ 0)
+        val iOne = LLVMConstInt(primaryTypes.integerType, 1, /* SignExtend = */ 0)
+
+        val fZzero = LLVMConstInt(primaryTypes.doubleType, 0, /* SignExtend = */ 0)
+        val fOne = LLVMConstInt(primaryTypes.doubleType, 1, /* SignExtend = */ 0)
     }
 
     private val RoutineDeclaration.signatureType: LLVMTypeRef
@@ -285,7 +317,7 @@ class CodeGenerator {
     private val Type.llvmType: LLVMTypeRef
         get() = when(this) {
             is IntegerType -> primaryTypes.integerType
-            is RealType -> primaryTypes.realType
+            is RealType -> primaryTypes.doubleType
             is BoolType -> primaryTypes.boolType
             UnitType -> primaryTypes.voidType
             else -> report("unsupported type $this")
@@ -294,11 +326,24 @@ class CodeGenerator {
     private val Collection<Type>.llvmType: PointerPointer<LLVMTypeRef>
         get() = PointerPointer(*this.map { it.llvmType }.toTypedArray())
 
-    private fun pushContext(routine: RoutineDeclaration) {
+    private fun pushContext(routine: RoutineDeclaration = codegenContext.routineNotNull) {
         codegenContext = CodeGenContext(codegenContext, routine)
     }
 
     private fun popContext() {
         codegenContext = codegenContext.parent ?: report("root context can't be pop-ed")
+    }
+
+    private fun createBasicBlock(name: String): LLVMBasicBlockRef {
+        return LLVMCreateBasicBlockInContext(llvmContext, name)
+    }
+
+    private fun getLastBasicBlock(): LLVMBasicBlockRef {
+        val function = getLastFunction()
+        return LLVMGetLastBasicBlock(function)
+    }
+
+    private fun getLastFunction(): LLVMValueRef {
+        return LLVMGetLastFunction(module)
     }
 }

@@ -3,4 +3,8 @@ package edu.itmo.ilang.ir
 sealed interface BodyEntry : IrEntry
 data class Body(
     val statements: List<BodyEntry>
-) : IrEntry
+) : IrEntry {
+    companion object {
+        val EMPTY = Body(emptyList())
+    }
+}

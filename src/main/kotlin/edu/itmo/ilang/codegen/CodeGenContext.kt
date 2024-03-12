@@ -11,6 +11,8 @@ class CodeGenContext(
 ) {
     private val valueDeclarations = mutableMapOf<ValueDeclaration, LLVMValueRef>()
 
+    val routineNotNull: RoutineDeclaration by lazy { routine!! }
+
     fun storeValueDecl(decl: ValueDeclaration, value: LLVMValueRef) {
         if (valueDeclarations.containsKey(decl)) {
             report("redeclaration of $decl")
