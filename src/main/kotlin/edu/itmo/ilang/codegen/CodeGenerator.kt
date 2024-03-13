@@ -13,6 +13,10 @@ class CodeGenerator {
     private val module = LLVMModuleCreateWithNameInContext("i-lang-program", llvmContext)
     private val builder = LLVMCreateBuilderInContext(llvmContext)
 
+    private val triple = LLVMGetDefaultTargetTriple()
+    private val target = LLVMTargetRef()
+    private val errorBuffer = BytePointer()
+
     private val primaryTypes by lazy { PrimaryTypes() }
     private val constants by lazy { Constants() }
 
@@ -34,29 +38,9 @@ class CodeGenerator {
                 report("function verification error!\n${moduleVerificationMessage.decodeToString()}")
             }
 
-            val triple = LLVMGetDefaultTargetTriple()
-            val target = LLVMTargetRef()
-
-            val error = BytePointer()
-
-            if (LLVMGetTargetFromTriple(triple, target, error) != 0) {
-                println("Failed to get target from triple: " + error.getString())
-                LLVMDisposeMessage(error)
-                return
-            }
-
-            val cpu = "generic"
-            val cpuFeatures = ""
-            val optimizationLevel = 0
-            val tm = LLVMCreateTargetMachine(
-                target, triple.string, cpu, cpuFeatures, optimizationLevel,
-                LLVMRelocDefault, LLVMCodeModelDefault
-            )
-
-            val outputFile = BytePointer("./sum.o")
-            if (LLVMTargetMachineEmitToFile(tm, module, outputFile, LLVMObjectFile, error) != 0) {
-                System.err.println("Failed to emit relocatable object file: " + error.string)
-                LLVMDisposeMessage(error)
+            if (LLVMGetTargetFromTriple(triple, target, errorBuffer) != 0) {
+                println("Failed to get target from triple: " + errorBuffer.getString())
+                LLVMDisposeMessage(errorBuffer)
                 return
             }
         } finally {
@@ -76,6 +60,52 @@ class CodeGenerator {
     private fun deinitializeLlvm() {
         LLVMDisposeBuilder(builder)
         LLVMContextDispose(llvmContext)
+    }
+
+    fun saveObjectFile(fileName: String) {
+        val cpu = "generic"
+        val cpuFeatures = ""
+        val optimizationLevel = 0
+        val tm = LLVMCreateTargetMachine(
+            target, triple.string, cpu, cpuFeatures, optimizationLevel,
+            LLVMRelocDefault, LLVMCodeModelDefault
+        )
+
+        val outputFile = BytePointer(fileName)
+        if (LLVMTargetMachineEmitToFile(tm, module, outputFile, LLVMObjectFile, errorBuffer) != 0) {
+            System.err.println("Failed to emit relocatable object file: " + errorBuffer.string)
+            LLVMDisposeMessage(errorBuffer)
+            return
+        }
+    }
+
+    fun interpretWithIntegerResult(routineName: String, args: List<Any>): Long {
+        val result = interpret(routineName, args)
+
+        return LLVMGenericValueToInt(result, /* IsSigned = */ 1)
+    }
+
+    fun interpretWithRealResult(routineName: String, args: List<Any>): Double {
+        val result = interpret(routineName, args)
+
+        return LLVMGenericValueToFloat(primaryTypes.doubleType, result)
+    }
+
+    private fun interpret(routineName: String, args: List<Any>): LLVMGenericValueRef {
+        val engine = LLVMExecutionEngineRef()
+        val options = LLVMMCJITCompilerOptions()
+        if (LLVMCreateMCJITCompilerForModule(engine, module, options, 3, errorBuffer) != 0) {
+            error("Failed to create JIT compiler: " + errorBuffer.string)
+        }
+
+        val function = LLVMGetNamedFunction(module, routineName)
+        if (function.isNull) {
+            error("can't find function $routineName")
+        }
+
+        val arguments = args.asFunctionArgs
+        return LLVMRunFunction(engine, function,  /* argumentCount */args.size, arguments)
+
     }
 
     private fun processDeclaration(declaration: Declaration) {
@@ -394,4 +424,19 @@ class CodeGenerator {
     private fun getLastFunction(): LLVMValueRef {
         return LLVMGetLastFunction(module)
     }
+
+    private val List<Any>.asFunctionArgs: PointerPointer<LLVMValueRef>
+        get() = PointerPointer(*this.map { value ->
+            when (value) {
+                is Int -> LLVMConstInt(primaryTypes.integerType, value.toLong(), /* SignExtend = */ 0)
+                is Long -> LLVMConstInt(primaryTypes.integerType, value, /* SignExtend = */ 0)
+                is Double -> LLVMConstReal(primaryTypes.integerType, value)
+                is Float -> LLVMConstReal(primaryTypes.integerType, value.toDouble())
+                is Boolean -> {
+                    val long = if (value) 1L else 0L
+                    LLVMConstInt(primaryTypes.boolType, long, /* SignExtend = */ 0)
+                }
+                else -> error("can't parse $value")
+            }
+        }.toTypedArray())
 }
