@@ -97,9 +97,6 @@ class CodeGenerator {
     }
 
     private fun interpret(routineName: String, args: List<Any>): LLVMGenericValueRef {
-        val pm = LLVMCreatePassManager()
-        LLVMRunPassManager(pm, module)
-
         val engine = LLVMExecutionEngineRef()
         val options = LLVMMCJITCompilerOptions()
         if (LLVMCreateMCJITCompilerForModule(engine, module, options, 3, errorBuffer) != 0) {
@@ -111,7 +108,7 @@ class CodeGenerator {
             error("can't find function $routineName")
         }
 
-        val arguments = args.asFunctionArgs
+        val arguments = args.asInterpretationFunctionArgs
         return LLVMRunFunction(engine, function,  /* NumArgs = */args.size, arguments)
 
     }
@@ -188,13 +185,18 @@ class CodeGenerator {
         pushContext()
         LLVMPositionBuilderAtEnd(builder, thenBlock)
         processBody(statement.thenBody)
-        LLVMBuildBr(builder, mergeBlock)
+        if (!statement.thenBody.hasTerminalStatement) {
+            LLVMBuildBr(builder, mergeBlock)
+        }
         popContext()
 
         pushContext()
         LLVMPositionBuilderAtEnd(builder, elseBlock)
-        processBody(statement.elseBody ?: Body.EMPTY)
-        LLVMBuildBr(builder, mergeBlock)
+        val elseBody = statement.elseBody ?: Body.EMPTY
+        processBody(elseBody)
+        if (!elseBody.hasTerminalStatement) {
+            LLVMBuildBr(builder, mergeBlock)
+        }
         popContext()
 
         LLVMPositionBuilderAtEnd(builder, mergeBlock)
@@ -321,7 +323,7 @@ class CodeGenerator {
             is OrExpression -> TODO()
             is XorExpression -> TODO()
             is ModExpression -> TODO()
-            is RoutineCall -> TODO()
+            is RoutineCall -> processRoutineCall(expression)
         }
     }
 
@@ -375,6 +377,23 @@ class CodeGenerator {
         )
     }
 
+    private fun processRoutineCall(call: RoutineCall): LLVMValueRef {
+        val routineSignature = call.routineDeclaration.signatureType
+        val routineName = call.routineDeclaration.name
+        val function = LLVMGetNamedFunction(module, routineName)
+
+        val args = call.arguments.asCallArgs
+
+        return LLVMBuildCall2(
+            builder,
+            routineSignature,
+            function,
+            args,
+            call.arguments.size,
+            routineName + "_call"
+        )
+    }
+
     inner class PrimaryTypes {
         val integerType: LLVMTypeRef = LLVMInt32TypeInContext(llvmContext)
         val doubleType: LLVMTypeRef = LLVMDoubleTypeInContext(llvmContext)
@@ -412,7 +431,7 @@ class CodeGenerator {
     private val Collection<Type>.llvmType: PointerPointer<LLVMTypeRef>
         get() = PointerPointer(*this.map { it.llvmType }.toTypedArray())
 
-    private fun pushContext(routine: RoutineDeclaration = codegenContext.routineNotNull) {
+    private fun pushContext(routine: RoutineDeclaration? = null) {
         codegenContext = CodeGenContext(codegenContext, routine)
     }
 
@@ -433,7 +452,15 @@ class CodeGenerator {
         return LLVMGetLastFunction(module)
     }
 
-    private val List<Any>.asFunctionArgs: PointerPointer<LLVMGenericValueRef>
+    private val List<Expression>.asCallArgs: PointerPointer<LLVMValueRef>
+        get() {
+            val values = this.map(::processExpression)
+
+            return PointerPointer(*values.toTypedArray())
+        }
+
+
+    private val List<Any>.asInterpretationFunctionArgs: PointerPointer<LLVMGenericValueRef>
         get() {
             val values = this.map { value ->
                 when (value) {

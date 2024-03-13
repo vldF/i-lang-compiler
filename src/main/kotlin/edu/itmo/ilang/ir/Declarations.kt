@@ -23,7 +23,9 @@ data class RoutineDeclaration(
     override val type: RoutineType,
     val parameters: List<ParameterDeclaration>,
     var body: Body?
-) : Declaration
+) : Declaration {
+    val isUnitReturnType = type.returnType !is UnitType
+}
 
 data class ParameterDeclaration(
     override val name: String,
