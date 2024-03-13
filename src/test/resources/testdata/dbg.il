@@ -1,4 +1,4 @@
-// debug, 10, 26
+// debug(10): 26
 
 routine debug(n: integer): integer is
     var i is 1 + 2 + n

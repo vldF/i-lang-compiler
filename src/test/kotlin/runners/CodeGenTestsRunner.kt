@@ -21,6 +21,7 @@ object CodeGenTestsRunner : ParseAwareTestRunner() {
                 val expectedResult = meta.expectedResult
                 val actualResult = codeGenerator.executeTest(meta)
                 assertEquals(expectedResult, actualResult)
+                println("success: for expected value $expectedResult got $actualResult")
             }
         } finally {
             codeGenerator.dispose()
@@ -51,27 +52,30 @@ object CodeGenTestsRunner : ParseAwareTestRunner() {
         return commentsInPreamble.mapNotNull(::tryParseExecutionMeta)
     }
 
-    private fun tryParseExecutionMeta(string: String): ExecutionMeta? {
-        val trimmed = string.removePrefix(COMMENT_PREFIX).trim()
-        val parts = trimmed.replace(" ", "").split(",")
-        val routineName = parts.first()
+    private val metaRegex = Regex("(.+)\\((.*)\\)(:(.*))?")
 
-        val operands = parts.drop(1).map { it.asValue }
-        val operandsNotNull = operands.filterNotNull()
+    private fun tryParseExecutionMeta(text: String): ExecutionMeta? {
+        val clear = text.removePrefix(COMMENT_PREFIX).trim().replace(" ", "")
+        val matchResult = metaRegex.matchEntire(clear) ?: return null
 
-        if (operands != operandsNotNull) {
+        val routineName = matchResult.groups[1]?.value ?: return null
+        val args = matchResult.groups[2]?.value ?: return null
+        val expectedValue = if (matchResult.groups.size == 5){
+            matchResult.groups[4]?.value
+        } else null
+
+        val argValues = args.split(",").map { it.asValue }
+        val argsNotNull = argValues.filterNotNull()
+
+        if (argValues != argsNotNull) {
             return null
         }
 
-        val args = operandsNotNull.dropLast(1)
-        var result: Any? = operandsNotNull.last()
-        if (result == UNIT_RET_TYPE) {
-            result = null
-        }
+        val result: Any? = expectedValue?.asValue
 
         return ExecutionMeta(
             routineName,
-            args,
+            argsNotNull,
             result
         )
     }
