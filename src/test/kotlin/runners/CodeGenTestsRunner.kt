@@ -19,22 +19,26 @@ object CodeGenTestsRunner : ParseAwareTestRunner() {
 
             for (meta in executionMetadata) {
                 val expectedResult = meta.expectedResult
-                val result = when (expectedResult) {
-                    is Long -> codeGenerator.interpretWithIntegerResult(meta.routineName, meta.args)
-                    is Boolean -> codeGenerator.interpretWithBooleanResult(meta.routineName, meta.args)
-                    is Double -> codeGenerator.interpretWithRealResult(meta.routineName, meta.args)
-                    null -> {
-                        codeGenerator.interpretWithRealResult(meta.routineName, meta.args)
-
-                        null
-                    }
-                    else -> error("can't parse expected result type $expectedResult of type ${expectedResult::class}")
-                }
-
-                assertEquals(expectedResult, result)
+                val actualResult = codeGenerator.executeTest(meta)
+                assertEquals(expectedResult, actualResult)
             }
         } finally {
             codeGenerator.dispose()
+        }
+    }
+
+    private fun CodeGenerator.executeTest(meta: ExecutionMeta): Any? {
+        return when (val expectedResult = meta.expectedResult) {
+            is Long -> this.interpretWithIntegerResult(meta.routineName, meta.args)
+            is Boolean -> this.interpretWithBooleanResult(meta.routineName, meta.args)
+            is Double -> this.interpretWithRealResult(meta.routineName, meta.args)
+            null -> {
+                this.interpretWithRealResult(meta.routineName, meta.args)
+
+                null
+            }
+
+            else -> error("can't parse expected result type $expectedResult of type ${expectedResult::class}")
         }
     }
 
