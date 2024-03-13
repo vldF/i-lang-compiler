@@ -1,6 +1,7 @@
 package edu.itmo.ilang.codegen
 
 import edu.itmo.ilang.ir.*
+import edu.itmo.ilang.util.iCheck
 import edu.itmo.ilang.util.report
 import org.bytedeco.javacpp.BytePointer
 import org.bytedeco.javacpp.PointerPointer
@@ -25,27 +26,22 @@ class CodeGenerator {
     fun generate(program: Program) {
         initializeLlvm()
 
-        try {
-            for (declaration in program.declarations) {
-                processDeclaration(declaration)
-            }
-
-            LLVMDumpModule(module)
-
-            val moduleVerificationMessage = ByteArray(1024)
-            val verificationResult = LLVMVerifyModule(module, LLVMPrintMessageAction, moduleVerificationMessage)
-            if (verificationResult != 0) {
-                report("function verification error!\n${moduleVerificationMessage.decodeToString()}")
-            }
-
-            if (LLVMGetTargetFromTriple(triple, target, errorBuffer) != 0) {
-                println("Failed to get target from triple: " + errorBuffer.getString())
-                LLVMDisposeMessage(errorBuffer)
-                return
-            }
-        } finally {
-            deinitializeLlvm()
+        for (declaration in program.declarations) {
+            processDeclaration(declaration)
         }
+
+        LLVMDumpModule(module)
+
+        val verificationResult = LLVMVerifyModule(module, LLVMPrintMessageAction, errorBuffer)
+        if (verificationResult != 0) {
+            report("function verification error!\n${errorBuffer.string}")
+        }
+
+        if (LLVMGetTargetFromTriple(triple, target, errorBuffer) != 0) {
+            report("Failed to get target from triple: " + errorBuffer.string)
+        }
+
+        iCheck(codegenContext.parent == null) { "all additional contexts must be popped" }
     }
 
     private fun initializeLlvm() {
@@ -57,9 +53,10 @@ class CodeGenerator {
         LLVMSetTarget(module, targetTriple)
     }
 
-    private fun deinitializeLlvm() {
+    fun dispose() {
         LLVMDisposeBuilder(builder)
         LLVMContextDispose(llvmContext)
+        LLVMDisposeErrorMessage(errorBuffer)
     }
 
     fun saveObjectFile(fileName: String) {
@@ -73,9 +70,7 @@ class CodeGenerator {
 
         val outputFile = BytePointer(fileName)
         if (LLVMTargetMachineEmitToFile(tm, module, outputFile, LLVMObjectFile, errorBuffer) != 0) {
-            System.err.println("Failed to emit relocatable object file: " + errorBuffer.string)
-            LLVMDisposeMessage(errorBuffer)
-            return
+            report("Failed to emit relocatable object file: " + errorBuffer.string)
         }
     }
 
@@ -91,7 +86,20 @@ class CodeGenerator {
         return LLVMGenericValueToFloat(primaryTypes.doubleType, result)
     }
 
+    fun interpretWithBooleanResult(routineName: String, args: List<Any>): Boolean {
+        val result = interpret(routineName, args)
+
+        return LLVMGenericValueToInt(result, /* IsSigned = */ 1) == 1L
+    }
+
+    fun interpretWithUnitResult(routineName: String, args: List<Any>) {
+        interpret(routineName, args)
+    }
+
     private fun interpret(routineName: String, args: List<Any>): LLVMGenericValueRef {
+        val pm = LLVMCreatePassManager()
+        LLVMRunPassManager(pm, module)
+
         val engine = LLVMExecutionEngineRef()
         val options = LLVMMCJITCompilerOptions()
         if (LLVMCreateMCJITCompilerForModule(engine, module, options, 3, errorBuffer) != 0) {
@@ -104,7 +112,7 @@ class CodeGenerator {
         }
 
         val arguments = args.asFunctionArgs
-        return LLVMRunFunction(engine, function,  /* argumentCount */args.size, arguments)
+        return LLVMRunFunction(engine, function,  /* NumArgs = */args.size, arguments)
 
     }
 
@@ -425,18 +433,21 @@ class CodeGenerator {
         return LLVMGetLastFunction(module)
     }
 
-    private val List<Any>.asFunctionArgs: PointerPointer<LLVMValueRef>
-        get() = PointerPointer(*this.map { value ->
-            when (value) {
-                is Int -> LLVMConstInt(primaryTypes.integerType, value.toLong(), /* SignExtend = */ 0)
-                is Long -> LLVMConstInt(primaryTypes.integerType, value, /* SignExtend = */ 0)
-                is Double -> LLVMConstReal(primaryTypes.integerType, value)
-                is Float -> LLVMConstReal(primaryTypes.integerType, value.toDouble())
-                is Boolean -> {
-                    val long = if (value) 1L else 0L
-                    LLVMConstInt(primaryTypes.boolType, long, /* SignExtend = */ 0)
+    private val List<Any>.asFunctionArgs: PointerPointer<LLVMGenericValueRef>
+        get() {
+            val values = this.map { value ->
+                when (value) {
+                    is Long -> LLVMCreateGenericValueOfInt(primaryTypes.integerType, value, /* IsSigned = */ 1)
+                    is Double -> LLVMCreateGenericValueOfFloat(primaryTypes.doubleType, value)
+                    is Boolean -> {
+                        val long = if (value) 1L else 0L
+                        LLVMCreateGenericValueOfInt(primaryTypes.boolType, long, /* IsSigned = */ 0)
+                    }
+                    else -> error("can't parse $value")
                 }
-                else -> error("can't parse $value")
             }
-        }.toTypedArray())
+
+            return PointerPointer(*values.toTypedArray())
+        }
+
 }
