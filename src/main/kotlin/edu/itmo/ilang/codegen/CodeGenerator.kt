@@ -131,34 +131,34 @@ class CodeGenerator {
     }
 
     private fun processIfStatement(statement: IfStatement) {
-        val mergeBlock = createBasicBlock("if-merge")
+        val function = getLastFunction()
+
         val thenBlock = createBasicBlock("if-then")
         val elseBlock = createBasicBlock("if-else")
+        val mergeBlock = createBasicBlock("if-merge")
+
+        LLVMAppendExistingBasicBlock(function, thenBlock)
+        LLVMAppendExistingBasicBlock(function, elseBlock)
+        LLVMAppendExistingBasicBlock(function, mergeBlock)
 
         val conditionExpr = statement.condition
         val conditionValue = processExpression(conditionExpr)
         val cmpExpr = LLVMBuildICmp(builder, LLVMIntEQ, conditionValue, constants.trueConst, "condition")
 
-        val function = getLastFunction()
-
         LLVMBuildCondBr(builder, cmpExpr, thenBlock, elseBlock)
 
         pushContext()
-        LLVMAppendExistingBasicBlock(function, thenBlock)
         LLVMPositionBuilderAtEnd(builder, thenBlock)
         processBody(statement.thenBody)
         LLVMBuildBr(builder, mergeBlock)
         popContext()
 
         pushContext()
-        LLVMAppendExistingBasicBlock(function, elseBlock)
         LLVMPositionBuilderAtEnd(builder, elseBlock)
         processBody(statement.elseBody ?: Body.EMPTY)
-        getLastBasicBlock()
         LLVMBuildBr(builder, mergeBlock)
         popContext()
 
-        LLVMAppendExistingBasicBlock(function, mergeBlock)
         LLVMPositionBuilderAtEnd(builder, mergeBlock)
     }
 
@@ -260,10 +260,10 @@ class CodeGenerator {
                 equalBasedBinaryOperator(expression.left, expression.right, LLVMIntSGE, LLVMRealOGE)
             }
             is LessExpression -> {
-                equalBasedBinaryOperator(expression.left, expression.right, LLVMIntUGT, LLVMRealOLT)
+                equalBasedBinaryOperator(expression.left, expression.right, LLVMIntSLT, LLVMRealOLT)
             }
             is LessOrEqualsExpression -> {
-                equalBasedBinaryOperator(expression.left, expression.right, LLVMIntULE, LLVMRealOLE)
+                equalBasedBinaryOperator(expression.left, expression.right, LLVMIntSLE, LLVMRealOLE)
             }
             is NotEqualsExpression -> equalBasedBinaryOperator(expression.left, expression.right, LLVMIntNE, LLVMRealUNE)
             is ArrayAccessExpression -> TODO()
