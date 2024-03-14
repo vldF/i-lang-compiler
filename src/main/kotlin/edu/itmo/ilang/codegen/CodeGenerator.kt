@@ -290,6 +290,14 @@ class CodeGenerator {
                     ::LLVMBuildFAdd,
                 )
             }
+            is DivExpression -> {
+                processArithmeticBinaryExpressionWithCast(
+                    expression.left,
+                    expression.right,
+                    ::LLVMBuildSDiv,
+                    ::LLVMBuildFDiv
+                )
+            }
             is EqualsExpression -> {
                 equalBasedBinaryOperator(expression.left, expression.right, LLVMIntEQ, LLVMRealOEQ)
             }
@@ -319,7 +327,6 @@ class CodeGenerator {
                 LLVMBuildLoad2(builder, valueType, storeValue, variable.name + "_load")
             }
             is AndExpression -> TODO()
-            is DivExpression -> TODO()
             is OrExpression -> TODO()
             is XorExpression -> TODO()
             is ModExpression -> TODO()
@@ -338,29 +345,32 @@ class CodeGenerator {
 
         if (left.type is IntegerType) {
             if (right.type is RealType) {
+                // right is real -> generalize left to real
                 leftValue = LLVMBuildSIToFP(
                     builder,
                     leftValue,
                     primaryTypes.doubleType,
-                    "cast left value to floating point"
+                    "int-to-real"
                 )
 
-                return opBuilderForFP(builder, leftValue, rightValue, "binary-op")
+                return opBuilderForFP(builder, leftValue, rightValue, "binary-op-fp")
             }
+
+            return opBuilderForIntegers(builder, leftValue, rightValue, "binary-op-ints")
         } else {
             if (right.type is IntegerType) {
+                // left is real -> generalize right to real
                 rightValue = LLVMBuildSIToFP(
                     builder,
                     rightValue,
                     primaryTypes.doubleType,
-                    "cast right value to integer"
+                    "int-to-real"
                 )
 
-                return opBuilderForFP(builder, leftValue, rightValue, "binary-op")
             }
-        }
 
-        return opBuilderForIntegers(builder, leftValue, rightValue, "binary-op")
+            return opBuilderForFP(builder, leftValue, rightValue, "binary-op-fp")
+        }
     }
 
     private fun equalBasedBinaryOperator(
