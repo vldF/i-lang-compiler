@@ -28,6 +28,7 @@ object CodeGenTestsRunner : ParseAwareTestRunner() {
                 } else {
                     assertEquals(expectedResult, actualResult)
                 }
+
                 println("success: for expected value $expectedResult got $actualResult")
             }
         } finally {
