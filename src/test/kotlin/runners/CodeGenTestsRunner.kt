@@ -2,6 +2,8 @@ package runners
 
 import edu.itmo.ilang.IrBuilder
 import edu.itmo.ilang.codegen.CodeGenerator
+import utils.LLVMInterpreter
+import kotlin.math.pow
 import kotlin.test.assertEquals
 
 object CodeGenTestsRunner : ParseAwareTestRunner() {
@@ -16,11 +18,16 @@ object CodeGenTestsRunner : ParseAwareTestRunner() {
 
         try {
             codeGenerator.generate(programIr)
+            val interpreter = LLVMInterpreter(codeGenerator.getModule())
 
             for (meta in executionMetadata) {
                 val expectedResult = meta.expectedResult
-                val actualResult = codeGenerator.executeTest(meta)
-                assertEquals(expectedResult, actualResult)
+                val actualResult = interpreter.executeFunction(meta)
+                if (expectedResult is Double && actualResult is Double) {
+                    assertEquals(expectedResult, actualResult, 10.0.pow(-5.0))
+                } else {
+                    assertEquals(expectedResult, actualResult)
+                }
                 println("success: for expected value $expectedResult got $actualResult")
             }
         } finally {
@@ -28,13 +35,13 @@ object CodeGenTestsRunner : ParseAwareTestRunner() {
         }
     }
 
-    private fun CodeGenerator.executeTest(meta: ExecutionMeta): Any? {
+    private fun LLVMInterpreter.executeFunction(meta: ExecutionMeta): Any? {
         return when (val expectedResult = meta.expectedResult) {
-            is Long -> this.interpretWithIntegerResult(meta.routineName, meta.args)
+            is Int -> this.interpretWithIntegerResult(meta.routineName, meta.args)
             is Boolean -> this.interpretWithBooleanResult(meta.routineName, meta.args)
             is Double -> this.interpretWithRealResult(meta.routineName, meta.args)
             null -> {
-                this.interpretWithRealResult(meta.routineName, meta.args)
+                this.interpretWithUnitResult(meta.routineName, meta.args)
 
                 null
             }
@@ -82,12 +89,11 @@ object CodeGenTestsRunner : ParseAwareTestRunner() {
 
     private val String.asValue: Any?
         get() {
-            val asLong = this.toLongOrNull()
+            val asInt = this.toIntOrNull()
             val asDouble = this.toDoubleOrNull()
             val asBoolean = this.toBooleanStrictOrNull()
-            val asNoArg = if (this == UNIT_RET_TYPE) UNIT_RET_TYPE else null
 
-            return asLong ?: asDouble ?: asBoolean ?: asNoArg
+            return asInt ?: asDouble ?: asBoolean
         }
 
     data class ExecutionMeta(
@@ -95,6 +101,4 @@ object CodeGenTestsRunner : ParseAwareTestRunner() {
         val args: List<Any>,
         val expectedResult: Any?,
     )
-
-    private const val UNIT_RET_TYPE = "unit"
 }

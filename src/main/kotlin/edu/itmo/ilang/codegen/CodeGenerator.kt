@@ -7,6 +7,7 @@ import org.bytedeco.javacpp.BytePointer
 import org.bytedeco.javacpp.PointerPointer
 import org.bytedeco.llvm.LLVM.*
 import org.bytedeco.llvm.global.LLVM.*
+import org.jetbrains.annotations.TestOnly
 
 class CodeGenerator {
     // todo: add debug renderer for a function CFG preview with LLVMViewFunctionCFG
@@ -74,43 +75,9 @@ class CodeGenerator {
         }
     }
 
-    fun interpretWithIntegerResult(routineName: String, args: List<Any>): Long {
-        val result = interpret(routineName, args)
-
-        return LLVMGenericValueToInt(result, /* IsSigned = */ 1)
-    }
-
-    fun interpretWithRealResult(routineName: String, args: List<Any>): Double {
-        val result = interpret(routineName, args)
-
-        return LLVMGenericValueToFloat(primaryTypes.doubleType, result)
-    }
-
-    fun interpretWithBooleanResult(routineName: String, args: List<Any>): Boolean {
-        val result = interpret(routineName, args)
-
-        return LLVMGenericValueToInt(result, /* IsSigned = */ 1) == 1L
-    }
-
-    fun interpretWithUnitResult(routineName: String, args: List<Any>) {
-        interpret(routineName, args)
-    }
-
-    private fun interpret(routineName: String, args: List<Any>): LLVMGenericValueRef {
-        val engine = LLVMExecutionEngineRef()
-        val options = LLVMMCJITCompilerOptions()
-        if (LLVMCreateMCJITCompilerForModule(engine, module, options, 3, errorBuffer) != 0) {
-            error("Failed to create JIT compiler: " + errorBuffer.string)
-        }
-
-        val function = LLVMGetNamedFunction(module, routineName)
-        if (function.isNull) {
-            error("can't find function $routineName")
-        }
-
-        val arguments = args.asInterpretationFunctionArgs
-        return LLVMRunFunction(engine, function,  /* NumArgs = */args.size, arguments)
-
+    @TestOnly
+    fun getModule(): LLVMModuleRef {
+        return module
     }
 
     private fun processDeclaration(declaration: Declaration) {
@@ -465,24 +432,6 @@ class CodeGenerator {
     private val List<Expression>.asCallArgs: PointerPointer<LLVMValueRef>
         get() {
             val values = this.map(::processExpression)
-
-            return PointerPointer(*values.toTypedArray())
-        }
-
-
-    private val List<Any>.asInterpretationFunctionArgs: PointerPointer<LLVMGenericValueRef>
-        get() {
-            val values = this.map { value ->
-                when (value) {
-                    is Long -> LLVMCreateGenericValueOfInt(primaryTypes.integerType, value, /* IsSigned = */ 1)
-                    is Double -> LLVMCreateGenericValueOfFloat(primaryTypes.doubleType, value)
-                    is Boolean -> {
-                        val long = if (value) 1L else 0L
-                        LLVMCreateGenericValueOfInt(primaryTypes.boolType, long, /* IsSigned = */ 0)
-                    }
-                    else -> error("can't parse $value")
-                }
-            }
 
             return PointerPointer(*values.toTypedArray())
         }
