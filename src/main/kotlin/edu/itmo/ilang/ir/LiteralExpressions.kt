@@ -1,5 +1,7 @@
 package edu.itmo.ilang.ir
 
+import kotlin.Nothing
+
 sealed interface Literal <T> : Expression {
     val value : T
 }
@@ -20,4 +22,10 @@ data class BoolLiteral(
     override val value: Boolean
 ) : Literal<Boolean> {
     override val type = BoolType
+}
+
+data object UninitializedLiteral : Literal<Nothing?> {
+    override val type = Nothing
+
+    override val value: Nothing? = null
 }

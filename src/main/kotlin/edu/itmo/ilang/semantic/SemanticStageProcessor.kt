@@ -4,7 +4,6 @@ import edu.itmo.ilang.ir.Program
 import edu.itmo.ilang.semantic.analysis.FunctionReturnChecker
 import edu.itmo.ilang.semantic.analysis.ReservedKeywordsChecker
 import edu.itmo.ilang.semantic.analysis.Typechecker
-import edu.itmo.ilang.semantic.analysis.UninitializedVariablesChecker
 import edu.itmo.ilang.semantic.transformations.DeadCodeEliminator
 import edu.itmo.ilang.semantic.transformations.ImplicitReturnTransformer
 import edu.itmo.ilang.semantic.transformations.LazyBoolOperationsTransformer
@@ -13,7 +12,6 @@ class SemanticStageProcessor {
     private val analysers = listOf(
         ReservedKeywordsChecker(),
         Typechecker(),
-        UninitializedVariablesChecker(),
         FunctionReturnChecker(),
     )
 

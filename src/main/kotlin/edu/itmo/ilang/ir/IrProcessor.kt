@@ -33,6 +33,7 @@ interface IrProcessor<T> {
             is BoolLiteral -> processBoolLiteral(entry)
             is IntegralLiteral -> processIntegralLiteral(entry)
             is RealLiteral -> processRealLiteral(entry)
+            UninitializedLiteral -> processUninitializedLiteral(entry as UninitializedLiteral)
             is ArrayAccessExpression -> processArrayAccessExpression(entry)
             is FieldAccessExpression -> processFieldAccessExpression(entry)
             is UnaryMinusExpression -> processUnaryMinusExpression(entry)
@@ -111,6 +112,8 @@ interface IrProcessor<T> {
     fun processIntegralLiteral(integralLiteral: IntegralLiteral): T
 
     fun processRealLiteral(realLiteral: RealLiteral): T
+
+    fun processUninitializedLiteral(uninitializedLiteral: UninitializedLiteral): T
 
     fun processArrayAccessExpression(arrayAccessExpression: ArrayAccessExpression): T
 
