@@ -21,7 +21,7 @@ class CodeGenerator {
     private val primaryTypes by lazy { PrimaryTypes() }
     private val constants by lazy { Constants() }
 
-    private var codegenContext = CodeGenContext(routine = null)
+    private var codegenContext = CodeGenContext()
 
     fun generate(program: Program) {
         initializeLlvm()
@@ -87,7 +87,7 @@ class CodeGenerator {
     }
 
     private fun processRoutineDeclaration(routineDeclaration: RoutineDeclaration) {
-        pushContext(routineDeclaration)
+        pushContext()
 
         val routineSignature = routineDeclaration.signatureType
         val routineName = routineDeclaration.name
@@ -99,8 +99,7 @@ class CodeGenerator {
             codegenContext.storeValueDecl(param, paramValue)
         }
 
-        val entryBlock = createBasicBlock("entry")
-        LLVMAppendExistingBasicBlock(function, entryBlock)
+        val entryBlock = LLVMAppendBasicBlock(function, "entry")
         LLVMPositionBuilderAtEnd(builder, entryBlock)
 
         processBody(routineDeclaration.body!!)
@@ -134,18 +133,14 @@ class CodeGenerator {
     private fun processIfStatement(statement: IfStatement) {
         val function = getLastFunction()
 
-        val thenBlock = createBasicBlock("if-then")
-        val elseBlock = createBasicBlock("if-else")
-        val mergeBlock = createBasicBlock("if-merge")
-
-        LLVMAppendExistingBasicBlock(function, thenBlock)
-        LLVMAppendExistingBasicBlock(function, elseBlock)
-
         val thenBody = statement.thenBody
         val elseBody = statement.elseBody ?: Body.EMPTY
 
-        val addMergeBlock = !thenBody.isTerminating || !elseBody.isTerminating
+        val thenBlock = LLVMAppendBasicBlock(function, "if-then")
+        val elseBlock = LLVMAppendBasicBlock(function, "if-else")
+        val mergeBlock = LLVMCreateBasicBlockInContext(llvmContext, "if-merge")
 
+        val addMergeBlock = !thenBody.isTerminating || !elseBody.isTerminating
         if (addMergeBlock) {
             LLVMAppendExistingBasicBlock(function, mergeBlock)
         }
@@ -487,16 +482,12 @@ class CodeGenerator {
     private val Collection<Type>.llvmType: PointerPointer<LLVMTypeRef>
         get() = PointerPointer(*this.map { it.llvmType }.toTypedArray())
 
-    private fun pushContext(routine: RoutineDeclaration? = null) {
-        codegenContext = CodeGenContext(codegenContext, routine)
+    private fun pushContext() {
+        codegenContext = CodeGenContext(codegenContext)
     }
 
     private fun popContext() {
         codegenContext = codegenContext.parent ?: report("root context can't be pop-ed")
-    }
-
-    private fun createBasicBlock(name: String): LLVMBasicBlockRef {
-        return LLVMCreateBasicBlockInContext(llvmContext, name)
     }
 
     private fun getLastBasicBlock(): LLVMBasicBlockRef {
