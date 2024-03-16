@@ -48,6 +48,7 @@ application {
 
 tasks.named<Test>("test") {
     useJUnitPlatform()
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
 tasks.generateGrammarSource {
