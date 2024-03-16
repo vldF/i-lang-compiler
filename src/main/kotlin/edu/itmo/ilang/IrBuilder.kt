@@ -36,15 +36,26 @@ class IrBuilder : iLangParserBaseVisitor<IrEntry>() {
 
     override fun visitVariableDeclaration(ctx: VariableDeclarationContext): VariableDeclaration {
         val name = ctx.Identifier().text
-        val initialExpression = ctx.expression()?.let { visitExpression(it) }
+        var initialExpression = ctx.expression()?.let { visitExpression(it) }
         var type = ctx.type()?.let { visitType(it) }
 
         if (initialExpression == null && type == null) {
             report("cannot infer type for $ctx")
         }
 
+        if (initialExpression == null) {
+            initialExpression = when(type) {
+                IntegerType -> IntegralLiteral(0)
+                BoolType -> BoolLiteral(false)
+                RealType -> RealLiteral(0.0)
+
+                is UserType -> UninitializedLiteral
+
+                else -> throw IllegalStateException()
+            }
+        }
         if (type == null) {
-            type = initialExpression!!.type
+            type = initialExpression.type
         }
 
         return VariableDeclaration(name, type, initialExpression)
