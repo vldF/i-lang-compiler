@@ -140,7 +140,15 @@ class CodeGenerator {
 
         LLVMAppendExistingBasicBlock(function, thenBlock)
         LLVMAppendExistingBasicBlock(function, elseBlock)
-        LLVMAppendExistingBasicBlock(function, mergeBlock)
+
+        val thenBody = statement.thenBody
+        val elseBody = statement.elseBody ?: Body.EMPTY
+
+        val addMergeBlock = !thenBody.isTerminating || !elseBody.isTerminating
+
+        if (addMergeBlock) {
+            LLVMAppendExistingBasicBlock(function, mergeBlock)
+        }
 
         val conditionExpr = statement.condition
         val conditionValue = processExpression(conditionExpr)
@@ -150,22 +158,25 @@ class CodeGenerator {
 
         pushContext()
         LLVMPositionBuilderAtEnd(builder, thenBlock)
-        processBody(statement.thenBody)
-        if (!statement.thenBody.hasTerminalStatement) {
+        processBody(thenBody)
+        if (!thenBody.isTerminating) {
             LLVMBuildBr(builder, mergeBlock)
         }
         popContext()
 
         pushContext()
         LLVMPositionBuilderAtEnd(builder, elseBlock)
-        val elseBody = statement.elseBody ?: Body.EMPTY
         processBody(elseBody)
-        if (!elseBody.hasTerminalStatement) {
+        if (!elseBody.isTerminating) {
             LLVMBuildBr(builder, mergeBlock)
         }
         popContext()
 
-        LLVMPositionBuilderAtEnd(builder, mergeBlock)
+        if (addMergeBlock) {
+            LLVMPositionBuilderAtEnd(builder, mergeBlock)
+        } else {
+            // nothing, we are at the function end
+        }
     }
 
     private fun processVariableDeclaration(declaration: VariableDeclaration) {

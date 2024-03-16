@@ -4,11 +4,7 @@ import edu.itmo.ilang.ir.Program
 import edu.itmo.ilang.semantic.analysis.FunctionReturnAnalyzer
 import edu.itmo.ilang.semantic.checkers.BreakAndContinueInsideCyclesChecker
 import edu.itmo.ilang.semantic.checkers.FunctionReturnChecker
-import edu.itmo.ilang.semantic.checkers.ReservedKeywordsChecker
-import edu.itmo.ilang.semantic.checkers.TypeChecker
 import edu.itmo.ilang.semantic.transformations.DeadCodeEliminator
-import edu.itmo.ilang.semantic.transformations.ImplicitReturnTransformer
-import edu.itmo.ilang.semantic.transformations.LazyBoolOperationsTransformer
 
 class SemanticStageProcessor {
     private val analysers = listOf(
@@ -16,16 +12,16 @@ class SemanticStageProcessor {
     )
 
     private val checkers = listOf(
-        ReservedKeywordsChecker(),
-        TypeChecker(),
+//        ReservedKeywordsChecker(), todo: enable when it will be implemented
+//        TypeChecker(), todo: enable when it will be implemented
         FunctionReturnChecker(),
         BreakAndContinueInsideCyclesChecker(),
     )
 
     private val transformers = listOf(
         DeadCodeEliminator(),
-        LazyBoolOperationsTransformer(),
-        ImplicitReturnTransformer(),
+//        LazyBoolOperationsTransformer(), todo: enable when it will be implemented
+//        ImplicitReturnTransformer(), we don't need it now
     )
 
     fun process(program: Program) {

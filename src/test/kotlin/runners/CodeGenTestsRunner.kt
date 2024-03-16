@@ -2,6 +2,7 @@ package runners
 
 import edu.itmo.ilang.IrBuilder
 import edu.itmo.ilang.codegen.CodeGenerator
+import edu.itmo.ilang.semantic.SemanticStageProcessor
 import utils.LLVMInterpreter
 import kotlin.math.pow
 import kotlin.test.assertEquals
@@ -12,6 +13,9 @@ object CodeGenTestsRunner : ParseAwareTestRunner() {
     override fun run(testName: String) {
         val parser = parse(testName)
         val programIr = IrBuilder().visitProgram(parser.program())
+        val semanticStageProcessor = SemanticStageProcessor()
+        semanticStageProcessor.process(programIr)
+
         val codeGenerator = CodeGenerator()
 
         val executionMetadata = readExecutionMetaData(testName)
