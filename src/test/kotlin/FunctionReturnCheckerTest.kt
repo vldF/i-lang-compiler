@@ -1,4 +1,5 @@
-import edu.itmo.ilang.semantic.analysis.FunctionReturnChecker
+import edu.itmo.ilang.semantic.analysis.FunctionReturnAnalyzer
+import edu.itmo.ilang.semantic.checkers.FunctionReturnChecker
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.assertFails
@@ -13,7 +14,11 @@ class FunctionReturnCheckerTest {
         """.trimIndent()
 
 
-        assertDoesNotThrow { FunctionReturnChecker().analyse(generateIr(example)) }
+        assertDoesNotThrow {
+            val ir = generateIr(example)
+            FunctionReturnAnalyzer().analyse(ir)
+            FunctionReturnChecker().check(ir)
+        }
     }
 
     @Test
@@ -25,7 +30,11 @@ class FunctionReturnCheckerTest {
         """.trimIndent()
 
 
-        assertDoesNotThrow { FunctionReturnChecker().analyse(generateIr(example)) }
+        assertDoesNotThrow {
+            val ir = generateIr(example)
+            FunctionReturnAnalyzer().analyse(ir)
+            FunctionReturnChecker().check(ir)
+        }
     }
 
     @Test
@@ -37,7 +46,11 @@ class FunctionReturnCheckerTest {
         """.trimIndent()
 
 
-        assertFails { FunctionReturnChecker().analyse(generateIr(example)) }
+        assertFails {
+            val ir = generateIr(example)
+            FunctionReturnAnalyzer().analyse(ir)
+            FunctionReturnChecker().check(ir)
+        }
     }
 
     @Test
@@ -53,6 +66,10 @@ class FunctionReturnCheckerTest {
         """.trimIndent()
 
 
-        assertDoesNotThrow { FunctionReturnChecker().analyse(generateIr(example)) }
+        assertDoesNotThrow {
+            val ir = generateIr(example)
+            FunctionReturnAnalyzer().analyse(ir)
+            FunctionReturnChecker().check(ir)
+        }
     }
 }

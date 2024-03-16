@@ -1,10 +1,10 @@
-package edu.itmo.ilang.semantic.analysis
+package edu.itmo.ilang.semantic.checkers
 
 import edu.itmo.ilang.ir.*
 import edu.itmo.ilang.util.report
 
-class BreakAndContinueInsideCyclesChecker : Analyser {
-    override fun analyse(program: Program) {
+class BreakAndContinueInsideCyclesChecker : Checker {
+    override fun check(program: Program) {
         checkIrEntry(program, false)
     }
 

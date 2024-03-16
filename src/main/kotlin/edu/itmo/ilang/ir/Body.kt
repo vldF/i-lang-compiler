@@ -4,8 +4,7 @@ sealed interface BodyEntry : IrEntry
 data class Body(
     var statements: List<BodyEntry>
 ) : IrEntry {
-    val hasTerminalStatement: Boolean
-        get() = statements.any { it.isTerminalStatement }
+    var isTerminating: Boolean = false
 
     companion object {
         val EMPTY = Body(emptyList())
