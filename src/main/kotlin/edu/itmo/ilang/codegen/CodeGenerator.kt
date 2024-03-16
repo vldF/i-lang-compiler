@@ -181,7 +181,13 @@ class CodeGenerator {
     }
 
     private fun createVariableInitializerValue(declaration: VariableDeclaration): LLVMValueRef? {
-        val initialExpression = declaration.initialExpression?.let { processExpression(declaration.initialExpression) }
+        val initialExpression = declaration.initialExpression
+
+        val initialValue = if (initialExpression == null || initialExpression == UninitializedLiteral) {
+            null
+        } else {
+            processExpression(initialExpression)
+        }
 
         return when (val type = declaration.type) {
             is ArrayType -> {
@@ -194,7 +200,7 @@ class CodeGenerator {
                 return LLVMBuildArrayMalloc(builder, elementType, arraySizeInBytes, "array-initializer")
             }
             else -> {
-                initialExpression
+                initialValue
             }
         }
     }
@@ -297,6 +303,7 @@ class CodeGenerator {
             is XorExpression -> TODO()
             is ModExpression -> TODO()
             is RoutineCall -> processRoutineCall(expression)
+            is UninitializedLiteral -> LLVMConstNull(primaryTypes.voidType)
         }
     }
 
