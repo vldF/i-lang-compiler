@@ -46,11 +46,6 @@ application {
     mainClass.set("edu.itmo.ilang.AppKt")
 }
 
-tasks.named<Test>("test") {
-    useJUnitPlatform()
-    jvmArgs("--enable-native-access=ALL-UNNAMED")
-}
-
 tasks.generateGrammarSource {
     arguments = arguments + listOf("-visitor", "-long-messages")
 }
@@ -70,6 +65,15 @@ task<JavaExec>("generateTests") {
 }
 
 tasks.test {
+    outputs.upToDateWhen { false }
+
+    useJUnitPlatform()
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
+
+    if (project.hasProperty("excludeTests")) {
+        exclude(project.property("excludeTests").toString())
+    }
+
     testLogging {
         events("passed", "skipped", "failed", "standardOut", "standardError")
     }
