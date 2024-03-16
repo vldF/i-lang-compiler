@@ -151,21 +151,21 @@ class CodeGenerator {
 
         LLVMBuildCondBr(builder, cmpExpr, thenBlock, elseBlock)
 
-        pushContext()
-        LLVMPositionBuilderAtEnd(builder, thenBlock)
-        processBody(thenBody)
-        if (!thenBody.isTerminating) {
-            LLVMBuildBr(builder, mergeBlock)
+        withContext {
+            LLVMPositionBuilderAtEnd(builder, thenBlock)
+            processBody(thenBody)
+            if (!thenBody.isTerminating) {
+                LLVMBuildBr(builder, mergeBlock)
+            }
         }
-        popContext()
 
-        pushContext()
-        LLVMPositionBuilderAtEnd(builder, elseBlock)
-        processBody(elseBody)
-        if (!elseBody.isTerminating) {
-            LLVMBuildBr(builder, mergeBlock)
+        withContext {
+            LLVMPositionBuilderAtEnd(builder, elseBlock)
+            processBody(elseBody)
+            if (!elseBody.isTerminating) {
+                LLVMBuildBr(builder, mergeBlock)
+            }
         }
-        popContext()
 
         if (addMergeBlock) {
             LLVMPositionBuilderAtEnd(builder, mergeBlock)
@@ -405,7 +405,6 @@ class CodeGenerator {
                     primaryTypes.doubleType,
                     "int-to-real"
                 )
-
             }
 
             return opBuilderForFP(builder, leftValue, rightValue, "binary-op-fp")
@@ -443,24 +442,6 @@ class CodeGenerator {
         )
     }
 
-    inner class PrimaryTypes {
-        val integerType: LLVMTypeRef = LLVMInt32TypeInContext(llvmContext)
-        val doubleType: LLVMTypeRef = LLVMDoubleTypeInContext(llvmContext)
-        val boolType: LLVMTypeRef = LLVMInt1TypeInContext(llvmContext)
-        val voidType: LLVMTypeRef = LLVMVoidTypeInContext(llvmContext)
-    }
-
-    inner class Constants {
-        val falseConst: LLVMValueRef = LLVMConstInt(primaryTypes.boolType, 0, /* SignExtend = */ 0)
-        val trueConst: LLVMValueRef = LLVMConstInt(primaryTypes.boolType, 1, /* SignExtend = */ 0)
-
-        val iZero: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 0, /* SignExtend = */ 0)
-        val iOne: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 1, /* SignExtend = */ 0)
-
-        val rZero: LLVMValueRef = LLVMConstReal(primaryTypes.doubleType, 0.0)
-        val rOne: LLVMValueRef = LLVMConstReal(primaryTypes.doubleType, 1.0)
-    }
-
     private val RoutineDeclaration.signatureType: LLVMTypeRef
         get() {
             val retType = this.type.returnType.llvmType
@@ -481,6 +462,19 @@ class CodeGenerator {
 
     private val Collection<Type>.llvmType: PointerPointer<LLVMTypeRef>
         get() = PointerPointer(*this.map { it.llvmType }.toTypedArray())
+
+    @Suppress("RecursivePropertyAccessor")
+    private val Type.sizeof: Long
+        get() {
+            return when (this) {
+                BoolType -> 1
+                IntegerType -> 32
+                RealType -> 64
+                is ArrayType -> this.contentType.sizeof * (this.size ?: 0)
+                is RecordType -> TODO()
+                else -> 0
+            }
+        }
 
     private fun pushContext() {
         codegenContext = CodeGenContext(codegenContext)
@@ -506,16 +500,27 @@ class CodeGenerator {
             return PointerPointer(*values.toTypedArray())
         }
 
-    @Suppress("RecursivePropertyAccessor")
-    private val Type.sizeof: Long
-        get() {
-            return when (this) {
-                BoolType -> 1
-                IntegerType -> 32
-                RealType -> 64
-                is ArrayType -> this.contentType.sizeof * (this.size ?: 0)
-                is RecordType -> TODO()
-                else -> 0
-            }
-        }
+    private fun withContext(func: () -> Unit) {
+        pushContext()
+        func()
+        popContext()
+    }
+
+    inner class PrimaryTypes {
+        val integerType: LLVMTypeRef = LLVMInt32TypeInContext(llvmContext)
+        val doubleType: LLVMTypeRef = LLVMDoubleTypeInContext(llvmContext)
+        val boolType: LLVMTypeRef = LLVMInt1TypeInContext(llvmContext)
+        val voidType: LLVMTypeRef = LLVMVoidTypeInContext(llvmContext)
+    }
+
+    inner class Constants {
+        val falseConst: LLVMValueRef = LLVMConstInt(primaryTypes.boolType, 0, /* SignExtend = */ 0)
+        val trueConst: LLVMValueRef = LLVMConstInt(primaryTypes.boolType, 1, /* SignExtend = */ 0)
+
+        val iZero: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 0, /* SignExtend = */ 0)
+        val iOne: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 1, /* SignExtend = */ 0)
+
+        val rZero: LLVMValueRef = LLVMConstReal(primaryTypes.doubleType, 0.0)
+        val rOne: LLVMValueRef = LLVMConstReal(primaryTypes.doubleType, 1.0)
+    }
 }
