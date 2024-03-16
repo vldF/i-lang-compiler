@@ -32,6 +32,11 @@ class iLangParserTests {
     }
     
     @Test
+    fun arrays_test() {
+        ParserTestsRunner.run("arrays")
+    }
+    
+    @Test
     fun bubble_sort_test() {
         ParserTestsRunner.run("bubble_sort")
     }

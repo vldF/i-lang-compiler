@@ -32,6 +32,11 @@ class iLangIrBuilderTests {
     }
     
     @Test
+    fun arrays_test() {
+        IrBuilderTestsRunner.run("arrays")
+    }
+    
+    @Test
     fun bubble_sort_test() {
         IrBuilderTestsRunner.run("bubble_sort")
     }

@@ -176,10 +176,28 @@ class CodeGenerator {
         val allocaValue = LLVMBuildAlloca(builder, type, name)
         codegenContext.storeValueDecl(declaration, allocaValue)
 
-        val initializer = declaration.initialExpression ?: return
+        val initializer = createVariableInitializerValue(declaration) ?: return
 
-        val initValue = processExpression(initializer)
-        LLVMBuildStore(builder, initValue, allocaValue)
+        LLVMBuildStore(builder, initializer, allocaValue)
+    }
+
+    private fun createVariableInitializerValue(declaration: VariableDeclaration): LLVMValueRef? {
+        val initialExpression = declaration.initialExpression?.let { processExpression(declaration.initialExpression) }
+
+        return when (val type = declaration.type) {
+            is ArrayType -> {
+                val elementType = type.contentType.llvmType
+                val arraySizeInBytes = LLVMConstInt(
+                    primaryTypes.integerType,
+                    type.sizeof,
+                    /* SignExtend = */ 0)
+
+                return LLVMBuildArrayMalloc(builder, elementType, arraySizeInBytes, "array-initializer")
+            }
+            else -> {
+                initialExpression
+            }
+        }
     }
 
     private fun processReturn(statement: Return) {
@@ -193,14 +211,7 @@ class CodeGenerator {
     }
 
     private fun processAssignment(statement: Assignment) {
-        val lhv = when (val lhs = statement.lhs) {
-            is VariableAccessExpression -> {
-                val variableDecl = lhs.variable
-                codegenContext.resolveValue(variableDecl)
-            }
-            is ArrayAccessExpression -> TODO()
-            is FieldAccessExpression -> TODO()
-        }
+        val lhv = processAccessExpressionAsLhs(statement.lhs)
 
         val rhs = statement.rhs
         val rhv = processExpression(rhs)
@@ -281,8 +292,31 @@ class CodeGenerator {
                 equalBasedBinaryOperator(expression.left, expression.right, LLVMIntSLE, LLVMRealOLE)
             }
             is NotEqualsExpression -> equalBasedBinaryOperator(expression.left, expression.right, LLVMIntNE, LLVMRealUNE)
-            is ArrayAccessExpression -> TODO()
+            is AccessExpression -> processAccessExpressionAsRhs(expression)
+            is AndExpression -> TODO()
+            is OrExpression -> TODO()
+            is XorExpression -> TODO()
+            is ModExpression -> TODO()
+            is RoutineCall -> processRoutineCall(expression)
+        }
+    }
+
+    private fun processAccessExpressionAsLhs(expression: AccessExpression): LLVMValueRef {
+        return when (expression) {
+            is VariableAccessExpression -> {
+                val variableDecl = expression.variable
+
+                codegenContext.resolveValue(variableDecl)
+            }
+            is ArrayAccessExpression -> {
+                getPointerToArrayElement(expression)
+            }
             is FieldAccessExpression -> TODO()
+        }
+    }
+
+    private fun processAccessExpressionAsRhs(expression: AccessExpression): LLVMValueRef {
+        return when (expression) {
             is VariableAccessExpression -> {
                 val variable = expression.variable
                 val storeValue = codegenContext.resolveValue(variable)
@@ -291,14 +325,40 @@ class CodeGenerator {
                 }
 
                 val valueType = LLVMGetAllocatedType(storeValue)
+
                 LLVMBuildLoad2(builder, valueType, storeValue, variable.name + "_load")
             }
-            is AndExpression -> TODO()
-            is OrExpression -> TODO()
-            is XorExpression -> TODO()
-            is ModExpression -> TODO()
-            is RoutineCall -> processRoutineCall(expression)
+            is ArrayAccessExpression -> {
+                val pointer = getPointerToArrayElement(expression)
+                val elementType = expression.arrayType.contentType.llvmType
+
+                LLVMBuildLoad2(builder, elementType, pointer, "load-array-elem")
+            }
+            is FieldAccessExpression -> TODO()
         }
+    }
+
+    private fun getPointerToArrayElement(arrayAccess: ArrayAccessExpression): LLVMValueRef {
+        val arrType = arrayAccess.arrayType.llvmType
+        val elemType = arrayAccess.arrayType.contentType.llvmType
+
+        val accessedExpression = processAccessExpressionAsLhs(arrayAccess.accessedExpression)
+        val loadArr = LLVMBuildLoad2(builder, arrType, accessedExpression, "load-arr")
+
+        val idx = processExpression(arrayAccess.indexExpression ?: error("index must be not null!")) // todo
+        // as far as our array indexes starts with 1, we need to subtract 1 from it
+        val idxPlusOne = LLVMBuildSub(builder, idx, constants.iOne, "array-index-correction")
+        val idxPointerPointer = PointerPointer<LLVMValueRef>(/* size = */ 1)
+        idxPointerPointer.put(0, idxPlusOne)
+
+        return LLVMBuildGEP2(
+            builder,
+            elemType,
+            loadArr,
+            idxPointerPointer,
+            1,
+            "array-access"
+        )
     }
 
     private fun processArithmeticBinaryExpressionWithCast(
@@ -402,6 +462,8 @@ class CodeGenerator {
             is RealType -> primaryTypes.doubleType
             is BoolType -> primaryTypes.boolType
             UnitType -> primaryTypes.voidType
+            is ArrayType -> LLVMPointerTypeInContext(llvmContext, 0)
+            is RecordType -> TODO()
             else -> report("unsupported type $this")
         }
 
@@ -436,4 +498,16 @@ class CodeGenerator {
             return PointerPointer(*values.toTypedArray())
         }
 
+    @Suppress("RecursivePropertyAccessor")
+    private val Type.sizeof: Long
+        get() {
+            return when (this) {
+                BoolType -> 1
+                IntegerType -> 32
+                RealType -> 64
+                is ArrayType -> this.contentType.sizeof * (this.size ?: 0)
+                is RecordType -> TODO()
+                else -> 0
+            }
+        }
 }
