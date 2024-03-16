@@ -15,12 +15,13 @@ class TestDeadCodeEliminator {
         """.trimIndent()
 
         val ir = generateIr(example)
+        val routineBody = (ir.declarations.first() as RoutineDeclaration).body!!
 
-        assertTrue { (ir.declarations.first() as RoutineDeclaration).body!!.statements.last() is VariableDeclaration }
+        assertTrue { routineBody.statements.last() is VariableDeclaration }
 
         DeadCodeEliminator().transform(ir)
 
-        assertTrue { (ir.declarations.first() as RoutineDeclaration).body!!.statements.last() is Return }
+        assertTrue { routineBody.statements.last() is Return }
     }
 
     @Test
@@ -39,17 +40,12 @@ class TestDeadCodeEliminator {
         """.trimIndent()
 
         val ir = generateIr(example)
+        val forInRoutineBody = (ir.declarations.first() as RoutineDeclaration).body!!.statements.first() as ForLoop
 
-        assertTrue {
-            ((ir.declarations.first() as RoutineDeclaration).body!!.statements.first() as ForLoop)
-                .body.statements.last() is Return
-        }
+        assertTrue { forInRoutineBody.body.statements.last() is Return }
 
         DeadCodeEliminator().transform(ir)
 
-        assertTrue {
-            ((ir.declarations.first() as RoutineDeclaration).body!!.statements.first() as ForLoop)
-                .body.statements.last() is Break
-        }
+        assertTrue { forInRoutineBody.body.statements.last() is Break }
     }
 }

@@ -17,12 +17,13 @@ class ImplicitReturnTransformerTest {
         """.trimIndent()
 
         val ir = generateIr(example)
+        val routineBody = (ir.declarations.first() as RoutineDeclaration).body!!
 
-        assertTrue { (ir.declarations.first() as RoutineDeclaration).body!!.statements.last() is VariableDeclaration }
+        assertTrue { routineBody.statements.last() is VariableDeclaration }
 
         ImplicitReturnTransformer().transform(ir)
 
-        assertTrue { (ir.declarations.first() as RoutineDeclaration).body!!.statements.last() is Return }
+        assertTrue { routineBody.statements.last() is Return }
     }
 
     @Test
@@ -38,11 +39,12 @@ class ImplicitReturnTransformerTest {
         """.trimIndent()
 
         val ir = generateIr(example)
+        val routineBody = (ir.declarations.first() as RoutineDeclaration).body!!
 
-        assertTrue { (ir.declarations.first() as RoutineDeclaration).body!!.statements.last() is IfStatement }
+        assertTrue { routineBody.statements.last() is IfStatement }
 
         ImplicitReturnTransformer().transform(ir)
 
-        assertTrue { (ir.declarations.first() as RoutineDeclaration).body!!.statements.last() is Return }
+        assertTrue { routineBody.statements.last() is Return }
     }
 }
