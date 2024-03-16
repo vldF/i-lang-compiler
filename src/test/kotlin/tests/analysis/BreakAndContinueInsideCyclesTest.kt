@@ -1,4 +1,7 @@
+package tests.analysis
+
 import edu.itmo.ilang.semantic.checkers.BreakAndContinueInsideCyclesChecker
+import generateIr
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.assertFails

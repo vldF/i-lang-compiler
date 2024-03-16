@@ -7,7 +7,7 @@ import kotlin.reflect.KClass
 
 const val INDENT = "    "
 const val testsBasePath = "./src/test/"
-const val generatedTestsPath = "$testsBasePath/kotlin/generated"
+const val generatedTestsPath = "$testsBasePath/kotlin/tests/generated"
 
 fun main() {
     val testdataDir = File(testsBasePath).resolve("resources").resolve("testdata")

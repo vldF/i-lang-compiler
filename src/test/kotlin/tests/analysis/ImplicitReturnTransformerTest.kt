@@ -1,8 +1,11 @@
+package tests.analysis
+
 import edu.itmo.ilang.ir.IfStatement
 import edu.itmo.ilang.ir.Return
 import edu.itmo.ilang.ir.RoutineDeclaration
 import edu.itmo.ilang.ir.VariableDeclaration
 import edu.itmo.ilang.semantic.transformations.ImplicitReturnTransformer
+import generateIr
 import org.junit.jupiter.api.Test
 import kotlin.test.assertTrue
 

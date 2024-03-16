@@ -1,5 +1,8 @@
+package tests.analysis
+
 import edu.itmo.ilang.ir.*
 import edu.itmo.ilang.semantic.transformations.DeadCodeEliminator
+import generateIr
 import org.junit.jupiter.api.Test
 import kotlin.test.assertTrue
 

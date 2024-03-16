@@ -1,5 +1,8 @@
+package tests.analysis
+
 import edu.itmo.ilang.semantic.analysis.FunctionReturnAnalyzer
 import edu.itmo.ilang.semantic.checkers.FunctionReturnChecker
+import generateIr
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.assertFails
