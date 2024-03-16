@@ -91,5 +91,10 @@ class iLangIrBuilderTests {
         IrBuilderTestsRunner.run("quick_sort")
     }
     
+    @Test
+    fun return_statements_in_if_branches_test() {
+        IrBuilderTestsRunner.run("return_statements_in_if_branches")
+    }
+    
     
 }

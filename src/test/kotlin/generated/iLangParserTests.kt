@@ -91,5 +91,10 @@ class iLangParserTests {
         ParserTestsRunner.run("quick_sort")
     }
     
+    @Test
+    fun return_statements_in_if_branches_test() {
+        ParserTestsRunner.run("return_statements_in_if_branches")
+    }
+    
     
 }
