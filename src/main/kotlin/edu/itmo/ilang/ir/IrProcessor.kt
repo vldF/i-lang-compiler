@@ -5,8 +5,8 @@ interface IrProcessor<T> {
         return when(entry) {
             is Body -> processBody(entry)
             is Assignment -> processAssignment(entry)
-            Break -> processBreak(entry as Break)
-            Continue -> processContinue(entry as Continue)
+            is Break -> processBreak(entry)
+            is Continue -> processContinue(entry)
             is ForLoop -> processForLoop(entry)
             is IfStatement -> processIfStatement(entry)
             is Return -> processReturn(entry)
@@ -33,16 +33,17 @@ interface IrProcessor<T> {
             is BoolLiteral -> processBoolLiteral(entry)
             is IntegralLiteral -> processIntegralLiteral(entry)
             is RealLiteral -> processRealLiteral(entry)
+            is UninitializedLiteral -> processUninitializedLiteral(entry)
             is ArrayAccessExpression -> processArrayAccessExpression(entry)
             is FieldAccessExpression -> processFieldAccessExpression(entry)
             is UnaryMinusExpression -> processUnaryMinusExpression(entry)
             is Program -> processProgram(entry)
-            BoolType -> processBoolType(entry as BoolType)
-            IntegerType -> processIntegerType(entry as IntegerType)
-            RealType -> processRealType(entry as RealType)
-            UnitType -> processUnitType(entry as UnitType)
-            MuParameter -> processMuParameter(entry as MuParameter)
-            Nothing -> processNothing(entry as Nothing)
+            is BoolType -> processBoolType(entry)
+            is IntegerType -> processIntegerType(entry)
+            is RealType -> processRealType(entry)
+            is UnitType -> processUnitType(entry)
+            is MuParameter -> processMuParameter(entry)
+            is Nothing -> processNothing(entry)
             is RoutineType -> processRoutineType(entry)
             is ArrayType -> processArrayType(entry)
             is RecordType -> processRecordType(entry)
@@ -111,6 +112,8 @@ interface IrProcessor<T> {
     fun processIntegralLiteral(integralLiteral: IntegralLiteral): T
 
     fun processRealLiteral(realLiteral: RealLiteral): T
+
+    fun processUninitializedLiteral(uninitializedLiteral: UninitializedLiteral): T
 
     fun processArrayAccessExpression(arrayAccessExpression: ArrayAccessExpression): T
 

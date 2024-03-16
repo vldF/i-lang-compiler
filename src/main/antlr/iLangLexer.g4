@@ -12,7 +12,7 @@ RETURN : 'return';
 
 BREAK : 'break';
 
-CONTINUE : 'CONTINUE';
+CONTINUE : 'continue';
 
 END : 'end';
 
