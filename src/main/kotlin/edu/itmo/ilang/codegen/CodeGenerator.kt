@@ -10,7 +10,6 @@ import org.bytedeco.llvm.global.LLVM.*
 import org.jetbrains.annotations.TestOnly
 
 class CodeGenerator {
-    // todo: add debug renderer for a function CFG preview with LLVMViewFunctionCFG
     private val llvmContext = LLVMContextCreate()
     private val module = LLVMModuleCreateWithNameInContext("i-lang-program", llvmContext)
     private val builder = LLVMCreateBuilderInContext(llvmContext)
