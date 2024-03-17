@@ -124,7 +124,7 @@ class CodeGenerator {
                 is WhileLoop -> TODO()
                 Break -> TODO()
                 Continue -> TODO()
-                is RoutineCall -> TODO()
+                is RoutineCall -> processRoutineCall(statement)
                 is TypeDeclaration -> TODO()
             }
         }
