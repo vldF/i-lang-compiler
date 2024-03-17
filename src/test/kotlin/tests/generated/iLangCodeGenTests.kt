@@ -82,6 +82,11 @@ class iLangCodeGenTests {
     }
     
     @Test
+    fun logic_test() {
+        CodeGenTestsRunner.run("logic")
+    }
+    
+    @Test
     fun pow_test() {
         CodeGenTestsRunner.run("pow")
     }

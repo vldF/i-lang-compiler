@@ -82,6 +82,11 @@ class iLangIrBuilderTests {
     }
     
     @Test
+    fun logic_test() {
+        IrBuilderTestsRunner.run("logic")
+    }
+    
+    @Test
     fun pow_test() {
         IrBuilderTestsRunner.run("pow")
     }

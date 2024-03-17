@@ -82,6 +82,11 @@ class iLangParserTests {
     }
     
     @Test
+    fun logic_test() {
+        ParserTestsRunner.run("logic")
+    }
+    
+    @Test
     fun pow_test() {
         ParserTestsRunner.run("pow")
     }

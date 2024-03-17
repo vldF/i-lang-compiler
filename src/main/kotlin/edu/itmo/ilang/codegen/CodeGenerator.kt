@@ -304,10 +304,38 @@ class CodeGenerator {
             }
             is NotEqualsExpression -> equalBasedBinaryOperator(expression.left, expression.right, LLVMIntNE, LLVMRealUNE)
             is AccessExpression -> processAccessExpressionAsRhs(expression)
-            is AndExpression -> TODO()
-            is OrExpression -> TODO()
-            is XorExpression -> TODO()
-            is ModExpression -> TODO()
+            is AndExpression -> {
+                LLVMBuildAnd(
+                    builder,
+                    processExpression(expression.left),
+                    processExpression(expression.right),
+                    "and"
+                )
+            }
+            is OrExpression -> {
+                LLVMBuildOr(
+                    builder,
+                    processExpression(expression.left),
+                    processExpression(expression.right),
+                    "and"
+                )
+            }
+            is XorExpression -> {
+                LLVMBuildXor(
+                    builder,
+                    processExpression(expression.left),
+                    processExpression(expression.right),
+                    "and"
+                )
+            }
+            is ModExpression -> {
+                processArithmeticBinaryExpressionWithCast(
+                    expression.left,
+                    expression.right,
+                    ::LLVMBuildSRem,
+                    ::LLVMBuildFRem
+                )
+            }
             is RoutineCall -> processRoutineCall(expression)
             is UninitializedLiteral -> LLVMConstNull(primaryTypes.voidType)
         }

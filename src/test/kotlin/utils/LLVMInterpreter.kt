@@ -65,7 +65,7 @@ class LLVMInterpreter(private val module: LLVMModuleRef) {
             when (arg) {
                 is Int -> ValueLayout.JAVA_INT
                 is Double -> ValueLayout.JAVA_DOUBLE
-                is Boolean -> ValueLayout.JAVA_INT
+                is Boolean -> ValueLayout.JAVA_BOOLEAN
                 else -> error("can't parse $arg")
             }
         }
