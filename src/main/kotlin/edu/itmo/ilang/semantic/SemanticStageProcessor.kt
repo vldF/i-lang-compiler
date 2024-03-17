@@ -21,7 +21,6 @@ class SemanticStageProcessor {
     private val transformers = listOf(
         DeadCodeEliminator(),
 //        LazyBoolOperationsTransformer(), todo: enable when it will be implemented
-//        ImplicitReturnTransformer(), we don't need it now
     )
 
     fun process(program: Program) {

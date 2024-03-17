@@ -16,11 +16,9 @@ object CodeGenTestsRunner : ParseAwareTestRunner() {
         val semanticStageProcessor = SemanticStageProcessor()
         semanticStageProcessor.process(programIr)
 
-        val codeGenerator = CodeGenerator()
-
         val executionMetadata = readExecutionMetaData(testName)
 
-        try {
+        CodeGenerator().use { codeGenerator ->
             codeGenerator.generate(programIr)
             val interpreter = LLVMInterpreter(codeGenerator.getModule())
 
@@ -35,8 +33,6 @@ object CodeGenTestsRunner : ParseAwareTestRunner() {
 
                 println("success: for expected value $expectedResult got $actualResult")
             }
-        } finally {
-            codeGenerator.dispose()
         }
     }
 
