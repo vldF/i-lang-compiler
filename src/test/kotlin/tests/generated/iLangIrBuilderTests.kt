@@ -97,6 +97,11 @@ class iLangIrBuilderTests {
     }
     
     @Test
+    fun records_test_test() {
+        IrBuilderTestsRunner.run("records_test")
+    }
+    
+    @Test
     fun return_statements_in_if_branches_test() {
         IrBuilderTestsRunner.run("return_statements_in_if_branches")
     }

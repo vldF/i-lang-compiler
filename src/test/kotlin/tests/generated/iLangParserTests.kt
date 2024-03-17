@@ -97,6 +97,11 @@ class iLangParserTests {
     }
     
     @Test
+    fun records_test_test() {
+        ParserTestsRunner.run("records_test")
+    }
+    
+    @Test
     fun return_statements_in_if_branches_test() {
         ParserTestsRunner.run("return_statements_in_if_branches")
     }
