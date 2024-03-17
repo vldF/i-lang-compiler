@@ -27,6 +27,10 @@ class CodeGenerator {
         initializeLlvm()
 
         for (declaration in program.declarations) {
+            processTopLevelDeclaration(declaration)
+        }
+
+        for (declaration in program.declarations) {
             processDeclaration(declaration)
         }
 
@@ -79,19 +83,30 @@ class CodeGenerator {
         return module
     }
 
-    private fun processDeclaration(declaration: Declaration) {
+    private fun processTopLevelDeclaration(declaration: Declaration) {
         when (declaration) {
             is RoutineDeclaration -> processRoutineDeclaration(declaration)
             else -> {}
         }
     }
 
-    private fun processRoutineDeclaration(routineDeclaration: RoutineDeclaration) {
-        pushContext()
+    private fun processDeclaration(declaration: Declaration) {
+        when (declaration) {
+            is RoutineDeclaration -> processRoutineDefinition(declaration)
+            else -> {}
+        }
+    }
 
+    private fun processRoutineDeclaration(routineDeclaration: RoutineDeclaration) {
         val routineSignature = routineDeclaration.signatureType
         val routineName = routineDeclaration.name
-        val function = LLVMAddFunction(module, routineName, routineSignature)
+        LLVMAddFunction(module, routineName, routineSignature)
+    }
+
+    private fun processRoutineDefinition(routineDeclaration: RoutineDeclaration) {
+        pushContext()
+
+        val function = LLVMGetNamedFunction(module, routineDeclaration.name)
         LLVMSetFunctionCallConv(function, LLVMCCallConv)
 
         for ((i, param) in routineDeclaration.parameters.withIndex()) {
