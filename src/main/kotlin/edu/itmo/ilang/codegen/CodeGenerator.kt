@@ -138,7 +138,13 @@ class CodeGenerator : Closeable {
         val entryBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "entry")
         LLVMPositionBuilderAtEnd(builder, entryBlock)
 
-        processBody(routineDeclaration.body!!)
+        val body = routineDeclaration.body!!
+        processBody(body)
+
+        if (!body.isTerminating && routineDeclaration.type.returnType is UnitType) {
+            // insert implicit return
+            LLVMBuildRetVoid(builder)
+        }
 
         popContext()
 
@@ -377,6 +383,13 @@ class CodeGenerator : Closeable {
         }
     }
 
+    private fun getPointerTo(expression: Expression): LLVMValueRef {
+        return when (expression) {
+            is AccessExpression -> processAccessExpressionAsLhs(expression)
+            else -> processExpression(expression)
+        }
+    }
+
     private fun processAccessExpressionAsLhs(expression: AccessExpression): LLVMValueRef {
         return when (expression) {
             is VariableAccessExpression -> {
@@ -522,13 +535,20 @@ class CodeGenerator : Closeable {
 
         val args = call.arguments.asCallArgs
 
+        // we should pass no instruction name if its return type is void
+        val callInstrName = if (call.routineDeclaration.type.returnType !is UnitType) {
+            routineName + "_call"
+        } else {
+            ""
+        }
+
         return LLVMBuildCall2(
             builder,
             routineSignature,
             function,
             args,
             call.arguments.size,
-            routineName + "_call"
+            callInstrName
         )
     }
 
@@ -547,7 +567,7 @@ class CodeGenerator : Closeable {
     private val RoutineDeclaration.signatureType: LLVMTypeRef
         get() {
             val retType = this.type.returnType.llvmType
-            val argumentTypes = this.type.argumentTypes.llvmType
+            val argumentTypes = this.type.argumentTypes.functionArgTypes
             return LLVMFunctionType(retType, argumentTypes, this.type.argumentTypes.size, /* IsVarArg = */ 0)
         }
 
@@ -572,8 +592,13 @@ class CodeGenerator : Closeable {
         }
 
 
-    private val Collection<Type>.llvmType: PointerPointer<LLVMTypeRef>
-        get() = PointerPointer(*this.map { it.llvmType }.toTypedArray())
+    private val Collection<Type>.functionArgTypes: PointerPointer<LLVMTypeRef>
+        get() = PointerPointer(*this.map {
+            when (it) {
+                is UserType -> LLVMPointerType(it.llvmType, 0)
+                else -> it.llvmType
+            }
+        }.toTypedArray())
 
     @Suppress("RecursivePropertyAccessor")
     private val Type.sizeof: Long
@@ -607,7 +632,7 @@ class CodeGenerator : Closeable {
 
     private val List<Expression>.asCallArgs: PointerPointer<LLVMValueRef>
         get() {
-            val values = this.map(::processExpression)
+            val values = this.map(::getPointerTo)
 
             return PointerPointer(*values.toTypedArray())
         }
