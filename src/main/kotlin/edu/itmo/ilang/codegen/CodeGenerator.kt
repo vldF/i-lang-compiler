@@ -8,8 +8,9 @@ import org.bytedeco.javacpp.PointerPointer
 import org.bytedeco.llvm.LLVM.*
 import org.bytedeco.llvm.global.LLVM.*
 import org.jetbrains.annotations.TestOnly
+import java.io.Closeable
 
-class CodeGenerator {
+class CodeGenerator : Closeable {
     private val llvmContext = LLVMContextCreate()
     private val module = LLVMModuleCreateWithNameInContext("i-lang-program", llvmContext)
     private val builder = LLVMCreateBuilderInContext(llvmContext)
@@ -18,10 +19,28 @@ class CodeGenerator {
     private val target = LLVMTargetRef()
     private val errorBuffer = BytePointer()
 
-    private val primaryTypes by lazy { PrimaryTypes() }
-    private val constants by lazy { Constants() }
+    private val primaryTypes = PrimaryTypes()
+    private val constants = Constants()
 
     private var codegenContext = CodeGenContext()
+
+    inner class PrimaryTypes {
+        val integerType: LLVMTypeRef = LLVMInt32TypeInContext(llvmContext)
+        val doubleType: LLVMTypeRef = LLVMDoubleTypeInContext(llvmContext)
+        val boolType: LLVMTypeRef = LLVMInt1TypeInContext(llvmContext)
+        val voidType: LLVMTypeRef = LLVMVoidTypeInContext(llvmContext)
+    }
+
+    inner class Constants {
+        val falseConst: LLVMValueRef = LLVMConstInt(primaryTypes.boolType, 0, /* SignExtend = */ 0)
+        val trueConst: LLVMValueRef = LLVMConstInt(primaryTypes.boolType, 1, /* SignExtend = */ 0)
+
+        val iZero: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 0, /* SignExtend = */ 0)
+        val iOne: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 1, /* SignExtend = */ 0)
+
+        val rZero: LLVMValueRef = LLVMConstReal(primaryTypes.doubleType, 0.0)
+        val rOne: LLVMValueRef = LLVMConstReal(primaryTypes.doubleType, 1.0)
+    }
 
     fun generate(program: Program) {
         initializeLlvm()
@@ -57,7 +76,7 @@ class CodeGenerator {
         LLVMSetTarget(module, targetTriple)
     }
 
-    fun dispose() {
+    override fun close() {
         LLVMDisposeBuilder(builder)
         LLVMContextDispose(llvmContext)
         LLVMDisposeErrorMessage(errorBuffer)
@@ -334,7 +353,7 @@ class CodeGenerator {
                     builder,
                     processExpression(expression.left),
                     processExpression(expression.right),
-                    "and"
+                    "or"
                 )
             }
             is XorExpression -> {
@@ -342,7 +361,7 @@ class CodeGenerator {
                     builder,
                     processExpression(expression.left),
                     processExpression(expression.right),
-                    "and"
+                    "xor"
                 )
             }
             is ModExpression -> {
@@ -597,23 +616,5 @@ class CodeGenerator {
         pushContext()
         func()
         popContext()
-    }
-
-    inner class PrimaryTypes {
-        val integerType: LLVMTypeRef = LLVMInt32TypeInContext(llvmContext)
-        val doubleType: LLVMTypeRef = LLVMDoubleTypeInContext(llvmContext)
-        val boolType: LLVMTypeRef = LLVMInt1TypeInContext(llvmContext)
-        val voidType: LLVMTypeRef = LLVMVoidTypeInContext(llvmContext)
-    }
-
-    inner class Constants {
-        val falseConst: LLVMValueRef = LLVMConstInt(primaryTypes.boolType, 0, /* SignExtend = */ 0)
-        val trueConst: LLVMValueRef = LLVMConstInt(primaryTypes.boolType, 1, /* SignExtend = */ 0)
-
-        val iZero: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 0, /* SignExtend = */ 0)
-        val iOne: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 1, /* SignExtend = */ 0)
-
-        val rZero: LLVMValueRef = LLVMConstReal(primaryTypes.doubleType, 0.0)
-        val rOne: LLVMValueRef = LLVMConstReal(primaryTypes.doubleType, 1.0)
     }
 }
