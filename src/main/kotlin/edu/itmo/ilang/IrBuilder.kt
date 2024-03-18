@@ -138,7 +138,7 @@ class IrBuilder : iLangParserBaseVisitor<IrEntry>() {
     }
 
     override fun visitBody(ctx: BodyContext): Body {
-        return Body(ctx.children.filter { it.text != ";" }.map { it.accept(this) as? BodyEntry
+        return Body(ctx.children.orEmpty().filter { it.text != ";" }.map { it.accept(this) as? BodyEntry
             ?: report("$it is not body entry") })
     }
 

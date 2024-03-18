@@ -1,4 +1,5 @@
 import org.junit.jupiter.api.Test
+import runners.IrBuilderTestsRunner
 
 // DO NOT MODIFY THIS FILE MANUALLY
 // Edit TestsGenerator.kt instead
@@ -31,8 +32,18 @@ class iLangIrBuilderTests {
     }
     
     @Test
+    fun arrays_test() {
+        IrBuilderTestsRunner.run("arrays")
+    }
+    
+    @Test
     fun bubble_sort_test() {
         IrBuilderTestsRunner.run("bubble_sort")
+    }
+    
+    @Test
+    fun dbg_test() {
+        IrBuilderTestsRunner.run("dbg")
     }
     
     @Test
@@ -71,6 +82,11 @@ class iLangIrBuilderTests {
     }
     
     @Test
+    fun logic_test() {
+        IrBuilderTestsRunner.run("logic")
+    }
+    
+    @Test
     fun pow_test() {
         IrBuilderTestsRunner.run("pow")
     }
@@ -78,6 +94,11 @@ class iLangIrBuilderTests {
     @Test
     fun quick_sort_test() {
         IrBuilderTestsRunner.run("quick_sort")
+    }
+    
+    @Test
+    fun return_statements_in_if_branches_test() {
+        IrBuilderTestsRunner.run("return_statements_in_if_branches")
     }
     
     

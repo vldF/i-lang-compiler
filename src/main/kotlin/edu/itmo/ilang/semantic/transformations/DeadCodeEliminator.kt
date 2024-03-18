@@ -12,7 +12,7 @@ class DeadCodeEliminator : Transformer {
             is Program -> irEntry.declarations.forEach { removeDeadCode(it) }
             is Body -> {
                 val indexOfTerminatingStatement = irEntry.statements
-                    .indexOfFirst { it is Return || it is Break || it is Continue }
+                    .indexOfFirst { it.isTerminalStatement }
 
                 if (indexOfTerminatingStatement != -1) {
                     irEntry.statements = irEntry.statements.take(indexOfTerminatingStatement + 1)

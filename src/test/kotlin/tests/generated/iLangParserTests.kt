@@ -1,4 +1,5 @@
 import org.junit.jupiter.api.Test
+import runners.ParserTestsRunner
 
 // DO NOT MODIFY THIS FILE MANUALLY
 // Edit TestsGenerator.kt instead
@@ -31,8 +32,18 @@ class iLangParserTests {
     }
     
     @Test
+    fun arrays_test() {
+        ParserTestsRunner.run("arrays")
+    }
+    
+    @Test
     fun bubble_sort_test() {
         ParserTestsRunner.run("bubble_sort")
+    }
+    
+    @Test
+    fun dbg_test() {
+        ParserTestsRunner.run("dbg")
     }
     
     @Test
@@ -71,6 +82,11 @@ class iLangParserTests {
     }
     
     @Test
+    fun logic_test() {
+        ParserTestsRunner.run("logic")
+    }
+    
+    @Test
     fun pow_test() {
         ParserTestsRunner.run("pow")
     }
@@ -78,6 +94,11 @@ class iLangParserTests {
     @Test
     fun quick_sort_test() {
         ParserTestsRunner.run("quick_sort")
+    }
+    
+    @Test
+    fun return_statements_in_if_branches_test() {
+        ParserTestsRunner.run("return_statements_in_if_branches")
     }
     
     

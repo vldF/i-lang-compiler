@@ -1,4 +1,7 @@
-import edu.itmo.ilang.semantic.analysis.BreakAndContinueInsideCyclesChecker
+package tests.analysis
+
+import edu.itmo.ilang.semantic.checkers.BreakAndContinueInsideCyclesChecker
+import generateIr
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import kotlin.test.assertFails
@@ -15,7 +18,9 @@ class BreakAndContinueInsideCyclesTest {
         """.trimIndent()
 
 
-        assertDoesNotThrow { BreakAndContinueInsideCyclesChecker().analyse(generateIr(example)) }
+        assertDoesNotThrow {
+            BreakAndContinueInsideCyclesChecker().check(generateIr(example))
+        }
     }
 
     @Test
@@ -27,7 +32,7 @@ class BreakAndContinueInsideCyclesTest {
         """.trimIndent()
 
 
-        assertFails { BreakAndContinueInsideCyclesChecker().analyse(generateIr(example)) }
+        assertFails { BreakAndContinueInsideCyclesChecker().check(generateIr(example)) }
     }
 
 }

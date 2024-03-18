@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Run Tests" type="GradleRunConfiguration" factoryName="Gradle">
+  <configuration default="false" name="All Tests" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="executionName" />
       <option name="externalProjectPath" value="$PROJECT_DIR$" />
@@ -11,8 +11,6 @@
       <option name="taskNames">
         <list>
           <option value=":test" />
-          <option value="--tests" />
-          <option value="&quot;iLangTests&quot;" />
         </list>
       </option>
       <option name="vmOptions" />
