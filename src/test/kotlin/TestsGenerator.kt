@@ -34,7 +34,7 @@ private fun generateCodegenTests(testCases: Array<File>) {
 
 private fun generateTests(testCases: Array<File>, testClassName: String, testRunner: KClass<out ITestRunner>) {
     val code = StringBuilder()
-    code.addPreamble()
+    code.addPreamble(testRunner)
     code.addTestClass(testClassName) {
         testCases.forEach { addTestFunction(it, testRunner.simpleName!!) }
     }
@@ -43,10 +43,10 @@ private fun generateTests(testCases: Array<File>, testClassName: String, testRun
     resultFilePath.writeText(code.toString())
 }
 
-private fun StringBuilder.addPreamble() {
+private fun StringBuilder.addPreamble(testRunner: KClass<out ITestRunner>) {
     val content = """
-        import runners.*
         import org.junit.jupiter.api.Test
+        import ${testRunner.qualifiedName}
         
         // DO NOT MODIFY THIS FILE MANUALLY
         // Edit TestsGenerator.kt instead

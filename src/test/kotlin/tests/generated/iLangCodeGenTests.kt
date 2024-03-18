@@ -87,6 +87,11 @@ class iLangCodeGenTests {
     }
     
     @Test
+    fun pass_by_ref_test() {
+        CodeGenTestsRunner.run("pass_by_ref")
+    }
+    
+    @Test
     fun pow_test() {
         CodeGenTestsRunner.run("pow")
     }
@@ -97,8 +102,8 @@ class iLangCodeGenTests {
     }
     
     @Test
-    fun records_test_test() {
-        CodeGenTestsRunner.run("records_test")
+    fun records_test() {
+        CodeGenTestsRunner.run("records")
     }
     
     @Test
