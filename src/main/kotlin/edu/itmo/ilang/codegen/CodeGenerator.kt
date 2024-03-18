@@ -135,7 +135,7 @@ class CodeGenerator : Closeable {
             codegenContext.storeValueDecl(param, paramValue)
         }
 
-        val entryBlock = LLVMAppendBasicBlock(function, "entry")
+        val entryBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "entry")
         LLVMPositionBuilderAtEnd(builder, entryBlock)
 
         processBody(routineDeclaration.body!!)
@@ -172,8 +172,8 @@ class CodeGenerator : Closeable {
         val thenBody = statement.thenBody
         val elseBody = statement.elseBody ?: Body.EMPTY
 
-        val thenBlock = LLVMAppendBasicBlock(function, "if-then")
-        val elseBlock = LLVMAppendBasicBlock(function, "if-else")
+        val thenBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "if-then")
+        val elseBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "if-else")
         val mergeBlock = LLVMCreateBasicBlockInContext(llvmContext, "if-merge")
 
         val addMergeBlock = !thenBody.isTerminating || !elseBody.isTerminating
