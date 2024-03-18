@@ -55,6 +55,7 @@ object CodeGenTestsRunner : ParseAwareTestRunner() {
         val code = getProgramText(testName)
         val commentsInPreamble = code
             .lines()
+            .filter { it.isNotBlank() }
             .takeWhile { line -> line.startsWith(COMMENT_PREFIX) }
 
         return commentsInPreamble.mapNotNull(::tryParseExecutionMeta)
