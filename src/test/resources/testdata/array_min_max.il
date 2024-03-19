@@ -6,6 +6,8 @@ routine min(arr : array[] integer) : integer is
             current := arr[i]
         end
     end
+
+    return current
 end
 
 routine max(arr : array[] integer) : integer is
@@ -16,6 +18,8 @@ routine max(arr : array[] integer) : integer is
             current := arr[i]
         end
     end
+
+    return current
 end
 
 routine main() : integer is
