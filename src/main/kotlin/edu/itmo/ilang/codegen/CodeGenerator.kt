@@ -105,6 +105,7 @@ class CodeGenerator : Closeable {
     private fun processTopLevelDeclaration(declaration: Declaration) {
         when (declaration) {
             is RoutineDeclaration -> processRoutineDeclaration(declaration)
+            is TypeDeclaration -> processTypeDeclaration(declaration)
             else -> {}
         }
     }
@@ -112,6 +113,7 @@ class CodeGenerator : Closeable {
     private fun processDeclaration(declaration: Declaration) {
         when (declaration) {
             is RoutineDeclaration -> processRoutineDefinition(declaration)
+            is TypeDeclaration -> processTypeDefinition(declaration)
             else -> {}
         }
     }
@@ -133,10 +135,16 @@ class CodeGenerator : Closeable {
             codegenContext.storeValueDecl(param, paramValue)
         }
 
-        val entryBlock = LLVMAppendBasicBlock(function, "entry")
+        val entryBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "entry")
         LLVMPositionBuilderAtEnd(builder, entryBlock)
 
-        processBody(routineDeclaration.body!!)
+        val body = routineDeclaration.body!!
+        processBody(body)
+
+        if (!body.isTerminating && routineDeclaration.type.returnType is UnitType) {
+            // insert implicit return
+            LLVMBuildRetVoid(builder)
+        }
 
         popContext()
 
@@ -170,8 +178,8 @@ class CodeGenerator : Closeable {
         val thenBody = statement.thenBody
         val elseBody = statement.elseBody ?: Body.EMPTY
 
-        val thenBlock = LLVMAppendBasicBlock(function, "if-then")
-        val elseBlock = LLVMAppendBasicBlock(function, "if-else")
+        val thenBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "if-then")
+        val elseBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "if-else")
         val mergeBlock = LLVMCreateBasicBlockInContext(llvmContext, "if-merge")
 
         val addMergeBlock = !thenBody.isTerminating || !elseBody.isTerminating
@@ -385,9 +393,18 @@ class CodeGenerator : Closeable {
             is ArrayAccessExpression -> {
                 getPointerToArrayElement(expression)
             }
-            is FieldAccessExpression -> TODO()
+            is FieldAccessExpression -> {
+                val idx = expression.getFieldIndex
+                getPointerToStructField(expression.accessedExpression, idx)
+            }
         }
     }
+
+    private val FieldAccessExpression.getFieldIndex: Int
+        get() {
+            val field = this.field
+            return (this.accessedType as RecordType).fields.indexOfFirst { it.first == field }
+        }
 
     private fun processAccessExpressionAsRhs(expression: AccessExpression): LLVMValueRef {
         return when (expression) {
@@ -408,7 +425,14 @@ class CodeGenerator : Closeable {
 
                 LLVMBuildLoad2(builder, elementType, pointer, "load-array-elem")
             }
-            is FieldAccessExpression -> TODO()
+            is FieldAccessExpression -> {
+                val idx = expression.getFieldIndex
+                val pointer = getPointerToStructField(expression.accessedExpression, idx)
+
+                val fieldType = expression.type.llvmType
+
+                return LLVMBuildLoad2(builder, fieldType, pointer, "load-field")
+            }
         }
     }
 
@@ -432,6 +456,16 @@ class CodeGenerator : Closeable {
             idxPointerPointer,
             1,
             "array-access"
+        )
+    }
+
+    private fun getPointerToStructField(accessedExpression: AccessExpression, fieldIndex: Int): LLVMValueRef {
+        return LLVMBuildStructGEP2(
+            builder,
+            accessedExpression.type.llvmType,
+            processAccessExpressionAsLhs(accessedExpression),
+            fieldIndex,
+            "get_field"
         )
     }
 
@@ -492,7 +526,14 @@ class CodeGenerator : Closeable {
         val routineName = call.routineDeclaration.name
         val function = LLVMGetNamedFunction(module, routineName)
 
-        val args = call.arguments.asCallArgs
+        val args = call.arguments.asCallArgValues
+
+        // we should pass no instruction name if its return type is void
+        val callInstrName = if (call.routineDeclaration.type.returnType !is UnitType) {
+            routineName + "_call"
+        } else {
+            ""
+        }
 
         return LLVMBuildCall2(
             builder,
@@ -500,14 +541,40 @@ class CodeGenerator : Closeable {
             function,
             args,
             call.arguments.size,
-            routineName + "_call"
+            callInstrName
         )
+    }
+
+    private val List<Expression>.asCallArgValues: PointerPointer<LLVMValueRef>
+        get() {
+            val values = this.map(::getValueOrPointerIfUserType)
+
+            return PointerPointer(*values.toTypedArray())
+        }
+
+    private fun getValueOrPointerIfUserType(expression: Expression): LLVMValueRef {
+        return when (expression) {
+            is AccessExpression -> processAccessExpressionAsLhs(expression)
+            else -> processExpression(expression)
+        }
+    }
+
+    private fun processTypeDeclaration(declaration: TypeDeclaration) {
+        LLVMStructCreateNamed(llvmContext, declaration.name)
+    }
+
+    private fun processTypeDefinition(declaration: TypeDeclaration) {
+        val structure = LLVMGetTypeByName(module, declaration.name)
+        val type = declaration.type as? RecordType ?: error("structure excepted but got ${declaration.type}")
+        val elementTypesPointer = type.elementTypes
+
+        LLVMStructSetBody(structure, elementTypesPointer, type.fields.size, /* Packed = */ 0)
     }
 
     private val RoutineDeclaration.signatureType: LLVMTypeRef
         get() {
             val retType = this.type.returnType.llvmType
-            val argumentTypes = this.type.argumentTypes.llvmType
+            val argumentTypes = this.type.argumentTypes.functionArgTypes
             return LLVMFunctionType(retType, argumentTypes, this.type.argumentTypes.size, /* IsVarArg = */ 0)
         }
 
@@ -518,12 +585,27 @@ class CodeGenerator : Closeable {
             is BoolType -> primaryTypes.boolType
             UnitType -> primaryTypes.voidType
             is ArrayType -> LLVMPointerTypeInContext(llvmContext, 0)
-            is RecordType -> TODO()
+            is RecordType -> LLVMStructTypeInContext(llvmContext, this.elementTypes, this.fields.size, /* Packed = */ 0)
             else -> report("unsupported type $this")
         }
 
-    private val Collection<Type>.llvmType: PointerPointer<LLVMTypeRef>
-        get() = PointerPointer(*this.map { it.llvmType }.toTypedArray())
+    private val RecordType.elementTypes: PointerPointer<LLVMTypeRef>
+        get() {
+            val elementTypes = fields.map { it.second.llvmType }.toTypedArray()
+            val elementTypePointer = PointerPointer<LLVMTypeRef>(fields.size.toLong())
+            elementTypePointer.put(*elementTypes)
+
+            return elementTypePointer
+        }
+
+
+    private val Collection<Type>.functionArgTypes: PointerPointer<LLVMTypeRef>
+        get() = PointerPointer(*this.map {
+            when (it) {
+                is UserType -> LLVMPointerType(it.llvmType, 0)
+                else -> it.llvmType
+            }
+        }.toTypedArray())
 
     @Suppress("RecursivePropertyAccessor")
     private val Type.sizeof: Long
@@ -554,13 +636,6 @@ class CodeGenerator : Closeable {
     private fun getLastFunction(): LLVMValueRef {
         return LLVMGetLastFunction(module)
     }
-
-    private val List<Expression>.asCallArgs: PointerPointer<LLVMValueRef>
-        get() {
-            val values = this.map(::processExpression)
-
-            return PointerPointer(*values.toTypedArray())
-        }
 
     private fun withContext(func: () -> Unit) {
         pushContext()

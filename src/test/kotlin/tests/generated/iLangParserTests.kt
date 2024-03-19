@@ -87,6 +87,11 @@ class iLangParserTests {
     }
     
     @Test
+    fun pass_by_ref_test() {
+        ParserTestsRunner.run("pass_by_ref")
+    }
+    
+    @Test
     fun pow_test() {
         ParserTestsRunner.run("pow")
     }
@@ -94,6 +99,11 @@ class iLangParserTests {
     @Test
     fun quick_sort_test() {
         ParserTestsRunner.run("quick_sort")
+    }
+    
+    @Test
+    fun records_test() {
+        ParserTestsRunner.run("records")
     }
     
     @Test
