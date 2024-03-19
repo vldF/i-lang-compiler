@@ -21,7 +21,7 @@ data class WhileLoop(
 ) : Statement
 
 data class ForLoop(
-    val loopVariableName: String,
+    val loopVariableDecl: VariableDeclaration,
     val isReversed: Boolean,
     val rangeStart: Expression,
     val rangeEnd: Expression,

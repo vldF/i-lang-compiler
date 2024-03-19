@@ -188,13 +188,14 @@ class IrBuilder : iLangParserBaseVisitor<IrEntry>() {
     override fun visitForLoop(ctx: ForLoopContext): ForLoop {
         val range = ctx.range()
         val loopVarName = ctx.Identifier().text
+        val loopVar = VariableDeclaration(loopVarName, IntegerType, null)
         return ForLoop(
-            loopVarName,
+            loopVar,
             range.REVERSE() != null,
             visitExpression(range.expression(0)),
             visitExpression(range.expression(1)),
             symbolTable.withScope {
-                symbolTable.addSymbol(loopVarName, SymbolInfo(IntegerType, VariableDeclaration(loopVarName, IntegerType, null)))
+                symbolTable.addSymbol(loopVarName, SymbolInfo(IntegerType, loopVar))
                 visitBody(ctx.body())
             }
         )
