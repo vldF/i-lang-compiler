@@ -427,7 +427,7 @@ class CodeGenerator : Closeable {
             }
             is FieldAccessExpression -> {
                 val idx = expression.getFieldIndex
-                val pointer = getPointerToStructField(expression.accessedExpression, idx,)
+                val pointer = getPointerToStructField(expression.accessedExpression, idx)
 
                 val fieldType = expression.type.llvmType
 
