@@ -57,6 +57,11 @@ class iLangParserTests {
     }
     
     @Test
+    fun for_test() {
+        ParserTestsRunner.run("for")
+    }
+    
+    @Test
     fun full_adder_test() {
         ParserTestsRunner.run("full_adder")
     }
@@ -87,11 +92,6 @@ class iLangParserTests {
     }
     
     @Test
-    fun loops_test() {
-        ParserTestsRunner.run("loops")
-    }
-    
-    @Test
     fun pass_by_ref_test() {
         ParserTestsRunner.run("pass_by_ref")
     }
@@ -114,6 +114,11 @@ class iLangParserTests {
     @Test
     fun return_statements_in_if_branches_test() {
         ParserTestsRunner.run("return_statements_in_if_branches")
+    }
+    
+    @Test
+    fun while_test() {
+        ParserTestsRunner.run("while")
     }
     
     

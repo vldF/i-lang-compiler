@@ -57,6 +57,11 @@ class iLangCodeGenTests {
     }
     
     @Test
+    fun for_test() {
+        CodeGenTestsRunner.run("for")
+    }
+    
+    @Test
     fun full_adder_test() {
         CodeGenTestsRunner.run("full_adder")
     }
@@ -87,11 +92,6 @@ class iLangCodeGenTests {
     }
     
     @Test
-    fun loops_test() {
-        CodeGenTestsRunner.run("loops")
-    }
-    
-    @Test
     fun pass_by_ref_test() {
         CodeGenTestsRunner.run("pass_by_ref")
     }
@@ -114,6 +114,11 @@ class iLangCodeGenTests {
     @Test
     fun return_statements_in_if_branches_test() {
         CodeGenTestsRunner.run("return_statements_in_if_branches")
+    }
+    
+    @Test
+    fun while_test() {
+        CodeGenTestsRunner.run("while")
     }
     
     

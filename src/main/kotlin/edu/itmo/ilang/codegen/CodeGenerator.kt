@@ -164,7 +164,7 @@ class CodeGenerator : Closeable {
                 is VariableDeclaration -> processVariableDeclaration(statement)
                 is Return -> processReturn(statement)
                 is ForLoop -> processForLoop(statement)
-                is WhileLoop -> TODO()
+                is WhileLoop -> processWhileLoop(statement)
                 Break -> TODO()
                 Continue -> TODO()
                 is RoutineCall -> processRoutineCall(statement)
@@ -633,6 +633,48 @@ class CodeGenerator : Closeable {
         }
 
         LLVMBuildCondBr(builder, condition, loopBody, exitBlock)
+
+        LLVMPositionBuilderAtEnd(builder, exitBlock)
+
+        popContext()
+    }
+
+
+    /**
+     *                │
+     *        ┌───────▼──────┐
+     *      ┌─►  loop-entry  │
+     *      │ │  (condition) │ false┌─────────┐
+     *      │ └───────┬──────┴─────►│loop-exit│
+     *      │         │true         └─────────┘
+     *      │     ┌───▼──┐
+     *      │     │ body │
+     *      │     └───┬──┘
+     *      └─────────┘
+     *
+     *  (based on https://llvm.org/docs/LoopTerminology.html)
+     */
+    private fun processWhileLoop(statement: WhileLoop) {
+        pushContext()
+        val function = codegenContext.currentFunction
+        val entryBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "loop-entry")
+        LLVMBuildBr(builder, entryBlock)
+
+        val loopBody = LLVMAppendBasicBlockInContext(llvmContext, function, "loop-body")
+        LLVMPositionBuilderAtEnd(builder, loopBody)
+
+        processBody(statement.body)
+
+        if (!statement.body.isTerminating) {
+            LLVMBuildBr(builder, entryBlock)
+        }
+
+        val exitBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "loop-exit")
+
+        LLVMPositionBuilderAtEnd(builder, entryBlock)
+        val condition = processExpression(statement.condition)
+        val cmpValue = LLVMBuildICmp(builder, LLVMIntEQ, condition, constants.trueConst, "loop-cond")
+        LLVMBuildCondBr(builder, cmpValue, loopBody, exitBlock)
 
         LLVMPositionBuilderAtEnd(builder, exitBlock)
 

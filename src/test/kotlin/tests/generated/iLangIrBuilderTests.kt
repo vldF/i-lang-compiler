@@ -57,6 +57,11 @@ class iLangIrBuilderTests {
     }
     
     @Test
+    fun for_test() {
+        IrBuilderTestsRunner.run("for")
+    }
+    
+    @Test
     fun full_adder_test() {
         IrBuilderTestsRunner.run("full_adder")
     }
@@ -87,11 +92,6 @@ class iLangIrBuilderTests {
     }
     
     @Test
-    fun loops_test() {
-        IrBuilderTestsRunner.run("loops")
-    }
-    
-    @Test
     fun pass_by_ref_test() {
         IrBuilderTestsRunner.run("pass_by_ref")
     }
@@ -114,6 +114,11 @@ class iLangIrBuilderTests {
     @Test
     fun return_statements_in_if_branches_test() {
         IrBuilderTestsRunner.run("return_statements_in_if_branches")
+    }
+    
+    @Test
+    fun while_test() {
+        IrBuilderTestsRunner.run("while")
     }
     
     
