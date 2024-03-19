@@ -383,13 +383,6 @@ class CodeGenerator : Closeable {
         }
     }
 
-    private fun getPointerTo(expression: Expression): LLVMValueRef {
-        return when (expression) {
-            is AccessExpression -> processAccessExpressionAsLhs(expression)
-            else -> processExpression(expression)
-        }
-    }
-
     private fun processAccessExpressionAsLhs(expression: AccessExpression): LLVMValueRef {
         return when (expression) {
             is VariableAccessExpression -> {
@@ -533,7 +526,7 @@ class CodeGenerator : Closeable {
         val routineName = call.routineDeclaration.name
         val function = LLVMGetNamedFunction(module, routineName)
 
-        val args = call.arguments.asCallArgs
+        val args = call.arguments.asCallArgValues
 
         // we should pass no instruction name if its return type is void
         val callInstrName = if (call.routineDeclaration.type.returnType !is UnitType) {
@@ -550,6 +543,20 @@ class CodeGenerator : Closeable {
             call.arguments.size,
             callInstrName
         )
+    }
+
+    private val List<Expression>.asCallArgValues: PointerPointer<LLVMValueRef>
+        get() {
+            val values = this.map(::getValueOrPointerIfUserType)
+
+            return PointerPointer(*values.toTypedArray())
+        }
+
+    private fun getValueOrPointerIfUserType(expression: Expression): LLVMValueRef {
+        return when (expression) {
+            is AccessExpression -> processAccessExpressionAsLhs(expression)
+            else -> processExpression(expression)
+        }
     }
 
     private fun processTypeDeclaration(declaration: TypeDeclaration) {
@@ -629,13 +636,6 @@ class CodeGenerator : Closeable {
     private fun getLastFunction(): LLVMValueRef {
         return LLVMGetLastFunction(module)
     }
-
-    private val List<Expression>.asCallArgs: PointerPointer<LLVMValueRef>
-        get() {
-            val values = this.map(::getPointerTo)
-
-            return PointerPointer(*values.toTypedArray())
-        }
 
     private fun withContext(func: () -> Unit) {
         pushContext()
