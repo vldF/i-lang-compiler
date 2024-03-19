@@ -33,7 +33,7 @@ routine forReverseTest(i : integer) : integer is
   arr[4] := i
   arr[5] := i
 
-  for idx reversed in 1..5 loop
+  for idx in reverse 1..5 loop
     res := res + arr[idx]
   end
 
