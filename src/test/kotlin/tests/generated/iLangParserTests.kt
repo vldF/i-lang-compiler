@@ -87,6 +87,11 @@ class iLangParserTests {
     }
     
     @Test
+    fun loops_test() {
+        ParserTestsRunner.run("loops")
+    }
+    
+    @Test
     fun pass_by_ref_test() {
         ParserTestsRunner.run("pass_by_ref")
     }

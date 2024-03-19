@@ -87,6 +87,11 @@ class iLangIrBuilderTests {
     }
     
     @Test
+    fun loops_test() {
+        IrBuilderTestsRunner.run("loops")
+    }
+    
+    @Test
     fun pass_by_ref_test() {
         IrBuilderTestsRunner.run("pass_by_ref")
     }
