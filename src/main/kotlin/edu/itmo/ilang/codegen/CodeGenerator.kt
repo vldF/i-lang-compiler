@@ -737,7 +737,7 @@ class CodeGenerator : Closeable {
                 IntegerType -> 32
                 RealType -> 64
                 is ArrayType -> this.contentType.sizeof * (this.size ?: 0)
-                is RecordType -> TODO()
+                is RecordType -> this.fields.sumOf { it.second.sizeof }
                 else -> 0
             }
         }
