@@ -33,9 +33,6 @@ routine fill5(arr : array [] integer, n : integer) is
   arr[3] := n
   arr[4] := n
   arr[5] := n
-
-  var tmp : array[5] integer
-  arr := tmp
 end
 
 routine testArray(i : integer) : integer is
