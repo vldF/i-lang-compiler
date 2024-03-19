@@ -37,8 +37,18 @@ class iLangIrBuilderTests {
     }
     
     @Test
+    fun break_test() {
+        IrBuilderTestsRunner.run("break")
+    }
+    
+    @Test
     fun bubble_sort_test() {
         IrBuilderTestsRunner.run("bubble_sort")
+    }
+    
+    @Test
+    fun continue_test() {
+        IrBuilderTestsRunner.run("continue")
     }
     
     @Test

@@ -37,8 +37,18 @@ class iLangParserTests {
     }
     
     @Test
+    fun break_test() {
+        ParserTestsRunner.run("break")
+    }
+    
+    @Test
     fun bubble_sort_test() {
         ParserTestsRunner.run("bubble_sort")
+    }
+    
+    @Test
+    fun continue_test() {
+        ParserTestsRunner.run("continue")
     }
     
     @Test

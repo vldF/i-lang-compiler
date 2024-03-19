@@ -165,8 +165,8 @@ class CodeGenerator : Closeable {
                 is Return -> processReturn(statement)
                 is ForLoop -> processForLoop(statement)
                 is WhileLoop -> processWhileLoop(statement)
-                Break -> TODO()
-                Continue -> TODO()
+                is Break -> processBreak()
+                is Continue -> processContinue()
                 is RoutineCall -> processRoutineCall(statement)
                 is TypeDeclaration -> TODO()
             }
@@ -582,7 +582,11 @@ class CodeGenerator : Closeable {
      *  (based on https://llvm.org/docs/LoopTerminology.html)
      */
     private fun processForLoop(statement: ForLoop) {
-        pushContext()
+        val entryBlock = LLVMCreateBasicBlockInContext(llvmContext, "loop-entry")
+        val exitBlock = LLVMCreateBasicBlockInContext(llvmContext, "exit-block")
+        val latchBlock = LLVMCreateBasicBlockInContext(llvmContext, "loop-latch")
+
+        pushContext(currentLoopContinueTo = latchBlock, currentLoopBreakTo = exitBlock)
 
         val function = codegenContext.currentFunction
         val entering = LLVMAppendBasicBlockInContext(llvmContext, function, "entering")
@@ -601,28 +605,29 @@ class CodeGenerator : Closeable {
 
         LLVMBuildStore(builder, initialValue, iteratorAlloca)
 
-        val loopEntry = LLVMAppendBasicBlockInContext(llvmContext, function, "loop-entry")
-        LLVMBuildBr(builder, loopEntry)
-        val loopBody = LLVMAppendBasicBlockInContext(llvmContext, function, "loop-body")
-        LLVMPositionBuilderAtEnd(builder, loopBody)
+        LLVMAppendExistingBasicBlock(function, entryBlock)
+        LLVMBuildBr(builder, entryBlock)
+        val loopBodyBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "loop-body")
+        LLVMPositionBuilderAtEnd(builder, loopBodyBlock)
 
         processBody(statement.body)
 
         if (!statement.body.isTerminating) {
-            val latchBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "loop-latch")
             LLVMBuildBr(builder, latchBlock)
-            LLVMPositionBuilderAtEnd(builder, latchBlock)
-
-            val iterValue = LLVMBuildLoad2(builder, primaryTypes.integerType, iteratorAlloca, "iter-load")
-            val newIterValue = LLVMBuildAdd(builder, iterValue, step, "iter-inc")
-            LLVMBuildStore(builder, newIterValue, iteratorAlloca)
-
-            LLVMBuildBr(builder, loopEntry)
         }
 
-        val exitBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "exit-block")
+        LLVMAppendExistingBasicBlock(function, latchBlock)
+        LLVMPositionBuilderAtEnd(builder, latchBlock)
 
-        LLVMPositionBuilderAtEnd(builder, loopEntry)
+        val iterValue = LLVMBuildLoad2(builder, primaryTypes.integerType, iteratorAlloca, "iter-load")
+        val newIterValue = LLVMBuildAdd(builder, iterValue, step, "iter-inc")
+        LLVMBuildStore(builder, newIterValue, iteratorAlloca)
+
+        LLVMBuildBr(builder, entryBlock)
+
+        LLVMAppendExistingBasicBlock(function, exitBlock)
+
+        LLVMPositionBuilderAtEnd(builder, entryBlock)
 
         val iterLoad = LLVMBuildLoad2(builder, primaryTypes.integerType, iteratorAlloca, "iter-load")
 
@@ -632,7 +637,7 @@ class CodeGenerator : Closeable {
             LLVMBuildICmp(builder, LLVMIntSLE, iterLoad, stopValue, "cmp-reverse")
         }
 
-        LLVMBuildCondBr(builder, condition, loopBody, exitBlock)
+        LLVMBuildCondBr(builder, condition, loopBodyBlock, exitBlock)
 
         LLVMPositionBuilderAtEnd(builder, exitBlock)
 
@@ -655,9 +660,11 @@ class CodeGenerator : Closeable {
      *  (based on https://llvm.org/docs/LoopTerminology.html)
      */
     private fun processWhileLoop(statement: WhileLoop) {
-        pushContext()
         val function = codegenContext.currentFunction
         val entryBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "loop-entry")
+        val exitBlock = LLVMCreateBasicBlockInContext(llvmContext, "loop-exit")
+
+        pushContext(currentLoopContinueTo = entryBlock, currentLoopBreakTo = exitBlock)
         LLVMBuildBr(builder, entryBlock)
 
         val loopBody = LLVMAppendBasicBlockInContext(llvmContext, function, "loop-body")
@@ -669,7 +676,7 @@ class CodeGenerator : Closeable {
             LLVMBuildBr(builder, entryBlock)
         }
 
-        val exitBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "loop-exit")
+        LLVMAppendExistingBasicBlock(function, exitBlock)
 
         LLVMPositionBuilderAtEnd(builder, entryBlock)
         val condition = processExpression(statement.condition)
@@ -679,6 +686,14 @@ class CodeGenerator : Closeable {
         LLVMPositionBuilderAtEnd(builder, exitBlock)
 
         popContext()
+    }
+
+    private fun processBreak() {
+        LLVMBuildBr(builder, codegenContext.currentLoopBreakTo)
+    }
+
+    private fun processContinue() {
+        LLVMBuildBr(builder, codegenContext.currentLoopContinueTo)
     }
 
     private fun processTypeDeclaration(declaration: TypeDeclaration) {
@@ -742,8 +757,17 @@ class CodeGenerator : Closeable {
             }
         }
 
-    private fun pushContext(function: LLVMValueRef? = null) {
-        codegenContext = CodeGenContext(codegenContext, _currentFunction = function)
+    private fun pushContext(
+        function: LLVMValueRef? = null,
+        currentLoopContinueTo: LLVMBasicBlockRef? = null,
+        currentLoopBreakTo: LLVMBasicBlockRef? = null,
+    ) {
+        codegenContext = CodeGenContext(
+            codegenContext,
+            _currentFunction = function,
+            _currentLoopContinueTo = currentLoopContinueTo,
+            _currentLoopBreakTo = currentLoopBreakTo
+        )
     }
 
     private fun popContext() {

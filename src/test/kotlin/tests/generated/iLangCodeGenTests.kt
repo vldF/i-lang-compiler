@@ -37,8 +37,18 @@ class iLangCodeGenTests {
     }
     
     @Test
+    fun break_test() {
+        CodeGenTestsRunner.run("break")
+    }
+    
+    @Test
     fun bubble_sort_test() {
         CodeGenTestsRunner.run("bubble_sort")
+    }
+    
+    @Test
+    fun continue_test() {
+        CodeGenTestsRunner.run("continue")
     }
     
     @Test
