@@ -34,7 +34,7 @@ class FunctionReturnAnalyzer : Analyser {
             return false
         }
         val firstStatement = statements.first()
-        if (firstStatement is Return || firstStatement is Break || firstStatement is Continue) {
+        if (firstStatement.isTerminalStatement) {
             return true
         }
         if (firstStatement is IfStatement && firstStatement.elseBody != null) {
