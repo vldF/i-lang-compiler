@@ -6,7 +6,7 @@ import edu.itmo.ilang.ir.IntegerType
 import edu.itmo.ilang.util.report
 
 class ForRangeIsInteger : BodyEntriesChecker {
-    override fun checkBodyEntry(bodyEntry: BodyEntry) {
+    override fun processBodyEntry(bodyEntry: BodyEntry) {
         if (bodyEntry is ForLoop &&
             (bodyEntry.rangeStart.type != IntegerType || bodyEntry.rangeEnd.type != IntegerType)) {
             report("ranges in for must be integer")
