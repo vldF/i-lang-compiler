@@ -4,6 +4,7 @@ import edu.itmo.ilang.ir.Program
 import edu.itmo.ilang.semantic.analysis.FunctionReturnAnalyzer
 import edu.itmo.ilang.semantic.checkers.AssignNewValueToArgument
 import edu.itmo.ilang.semantic.checkers.BreakAndContinueInsideCyclesChecker
+import edu.itmo.ilang.semantic.checkers.ForRangeIsInteger
 import edu.itmo.ilang.semantic.checkers.FunctionReturnChecker
 import edu.itmo.ilang.semantic.transformations.DeadCodeEliminator
 
@@ -18,7 +19,7 @@ class SemanticStageProcessor {
         FunctionReturnChecker(),
         BreakAndContinueInsideCyclesChecker(),
         AssignNewValueToArgument(),
-//        ForRangeIsInteger(), todo: enable when it will be implemented
+        ForRangeIsInteger(),
     )
 
     private val transformers = listOf(
