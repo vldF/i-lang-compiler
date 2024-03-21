@@ -20,7 +20,6 @@ class SemanticStageProcessor {
 
     private val transformers = listOf(
         DeadCodeEliminator(),
-//        LazyBoolOperationsTransformer(), todo: enable when it will be implemented
     )
 
     fun process(program: Program) {
