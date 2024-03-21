@@ -597,7 +597,8 @@ class CodeGenerator : Closeable {
         val iteratorAlloca = LLVMBuildAlloca(builder, primaryTypes.integerType, "loop-iter-var-alloca")
         codegenContext.storeValueDecl(loopVar, iteratorAlloca)
 
-        val (initialValue, stopValue, step) = if (!statement.isReversed) {
+        val isRangeReversed = !statement.isReversed
+        val (initialValue, stopValue, step) = if (isRangeReversed) {
             Triple(processExpression(statement.rangeStart), processExpression(statement.rangeEnd), constants.iOne)
         } else {
             Triple(processExpression(statement.rangeEnd), processExpression(statement.rangeStart), constants.iMinusOne)
