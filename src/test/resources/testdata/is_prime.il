@@ -1,3 +1,4 @@
+// isPrime(1): false
 // isPrime(2): true
 // isPrime(3): true
 // isPrime(4): false
