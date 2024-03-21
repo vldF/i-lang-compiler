@@ -71,10 +71,27 @@ class IrBuilder : iLangParserBaseVisitor<IrEntry>() {
         if (type is UserType) {
             type.identifier = name
         }
+        if (type is RecordType) {
+            extractMuParameters(type, type)
+        }
         symbolInfo.type = type
 
         return TypeDeclaration(name, type)
             .also { symbolInfo.declaration = it }
+    }
+
+    private fun extractMuParameters(typeForProcess: Type, typeForMu: Type) {
+        if (typeForProcess is RecordType && typeForProcess == typeForMu) {
+            typeForProcess.fields = typeForProcess.fields.map { (id, type) ->
+                if (type is MuParameter) id to typeForMu
+                else id to type.also { extractMuParameters(it, typeForMu) }
+            }
+        } else if (typeForProcess is ArrayType) {
+            if (typeForProcess.contentType is MuParameter)
+                typeForProcess.contentType = typeForMu
+            else
+                extractMuParameters(typeForProcess.contentType, typeForMu)
+        }
     }
 
     override fun visitRoutineDeclaration(ctx: RoutineDeclarationContext): RoutineDeclaration {

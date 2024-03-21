@@ -22,16 +22,42 @@ sealed interface UserType : Type {
 
 data class ArrayType(
     override var identifier: String?,
-    val contentType: Type,
+    var contentType: Type,
 ) : UserType {
     // null specify any size. Used for parameter declaration
     var size: Int? = null
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as ArrayType
+
+        return identifier == other.identifier
+    }
+
+    override fun hashCode(): Int {
+        return identifier?.hashCode() ?: 0
+    }
 }
 
 data class RecordType(
     override var identifier: String?,
-    val fields: List<Pair<String, Type>>,
-) : UserType
+    var fields: List<Pair<String, Type>>,
+) : UserType {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as RecordType
+
+        return identifier == other.identifier
+    }
+
+    override fun hashCode(): Int {
+        return identifier?.hashCode() ?: 0
+    }
+}
 
 data class RoutineType(
     val argumentTypes: List<Type>,
