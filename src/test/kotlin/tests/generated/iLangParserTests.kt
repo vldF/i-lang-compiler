@@ -37,8 +37,18 @@ class iLangParserTests {
     }
     
     @Test
+    fun break_test() {
+        ParserTestsRunner.run("break")
+    }
+    
+    @Test
     fun bubble_sort_test() {
         ParserTestsRunner.run("bubble_sort")
+    }
+    
+    @Test
+    fun continue_test() {
+        ParserTestsRunner.run("continue")
     }
     
     @Test
@@ -54,6 +64,11 @@ class iLangParserTests {
     @Test
     fun fib_test() {
         ParserTestsRunner.run("fib")
+    }
+    
+    @Test
+    fun for_test() {
+        ParserTestsRunner.run("for")
     }
     
     @Test
@@ -109,6 +124,11 @@ class iLangParserTests {
     @Test
     fun return_statements_in_if_branches_test() {
         ParserTestsRunner.run("return_statements_in_if_branches")
+    }
+    
+    @Test
+    fun while_test() {
+        ParserTestsRunner.run("while")
     }
     
     

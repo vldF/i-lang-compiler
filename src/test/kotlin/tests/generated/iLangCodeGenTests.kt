@@ -37,8 +37,18 @@ class iLangCodeGenTests {
     }
     
     @Test
+    fun break_test() {
+        CodeGenTestsRunner.run("break")
+    }
+    
+    @Test
     fun bubble_sort_test() {
         CodeGenTestsRunner.run("bubble_sort")
+    }
+    
+    @Test
+    fun continue_test() {
+        CodeGenTestsRunner.run("continue")
     }
     
     @Test
@@ -54,6 +64,11 @@ class iLangCodeGenTests {
     @Test
     fun fib_test() {
         CodeGenTestsRunner.run("fib")
+    }
+    
+    @Test
+    fun for_test() {
+        CodeGenTestsRunner.run("for")
     }
     
     @Test
@@ -109,6 +124,11 @@ class iLangCodeGenTests {
     @Test
     fun return_statements_in_if_branches_test() {
         CodeGenTestsRunner.run("return_statements_in_if_branches")
+    }
+    
+    @Test
+    fun while_test() {
+        CodeGenTestsRunner.run("while")
     }
     
     

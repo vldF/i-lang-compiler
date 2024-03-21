@@ -37,6 +37,7 @@ class CodeGenerator : Closeable {
 
         val iZero: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 0, /* SignExtend = */ 0)
         val iOne: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 1, /* SignExtend = */ 0)
+        val iMinusOne: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, -1, /* SignExtend = */ 0)
 
         val rZero: LLVMValueRef = LLVMConstReal(primaryTypes.doubleType, 0.0)
         val rOne: LLVMValueRef = LLVMConstReal(primaryTypes.doubleType, 1.0)
@@ -125,10 +126,10 @@ class CodeGenerator : Closeable {
     }
 
     private fun processRoutineDefinition(routineDeclaration: RoutineDeclaration) {
-        pushContext()
-
         val function = LLVMGetNamedFunction(module, routineDeclaration.name)
         LLVMSetFunctionCallConv(function, LLVMCCallConv)
+
+        pushContext(function = function)
 
         for ((i, param) in routineDeclaration.parameters.withIndex()) {
             val paramValue = LLVMGetParam(function, i)
@@ -162,10 +163,10 @@ class CodeGenerator : Closeable {
                 is Assignment -> processAssignment(statement)
                 is VariableDeclaration -> processVariableDeclaration(statement)
                 is Return -> processReturn(statement)
-                is ForLoop -> TODO()
-                is WhileLoop -> TODO()
-                Break -> TODO()
-                Continue -> TODO()
+                is ForLoop -> processForLoop(statement)
+                is WhileLoop -> processWhileLoop(statement)
+                is Break -> processBreak()
+                is Continue -> processContinue()
                 is RoutineCall -> processRoutineCall(statement)
                 is TypeDeclaration -> TODO()
             }
@@ -173,7 +174,7 @@ class CodeGenerator : Closeable {
     }
 
     private fun processIfStatement(statement: IfStatement) {
-        val function = getLastFunction()
+        val function = codegenContext.currentFunction
 
         val thenBody = statement.thenBody
         val elseBody = statement.elseBody ?: Body.EMPTY
@@ -559,6 +560,143 @@ class CodeGenerator : Closeable {
         }
     }
 
+    /**
+     *                │
+     *       ┌────────▼───────┐
+     *       │    entering    │
+     *       │(initialization)│
+     *       └────────┬───────┘
+     *        ┌───────▼──────┐
+     *      ┌─►  loop-entry  │
+     *      │ │  (condition) │ false┌─────────┐
+     *      │ └───────┬──────┴─────►│loop-exit│
+     *      │         │true         └─────────┘
+     *      │     ┌───▼──┐
+     *      │     │ body │
+     *      │     └───┬──┘
+     *      │   ┌─────▼─────┐
+     *      │   │   latch   │
+     *      └───┤(increment)│
+     *          └───────────┘
+     *
+     *  (based on https://llvm.org/docs/LoopTerminology.html)
+     */
+    private fun processForLoop(statement: ForLoop) {
+        val entryBlock = LLVMCreateBasicBlockInContext(llvmContext, "loop-entry")
+        val exitBlock = LLVMCreateBasicBlockInContext(llvmContext, "exit-block")
+        val latchBlock = LLVMCreateBasicBlockInContext(llvmContext, "loop-latch")
+
+        pushContext(currentLoopContinueTo = latchBlock, currentLoopBreakTo = exitBlock)
+
+        val function = codegenContext.currentFunction
+        val entering = LLVMAppendBasicBlockInContext(llvmContext, function, "entering")
+        LLVMBuildBr(builder, entering)
+        LLVMPositionBuilderAtEnd(builder, entering)
+
+        val loopVar = statement.loopVariableDecl
+        val iteratorAlloca = LLVMBuildAlloca(builder, primaryTypes.integerType, "loop-iter-var-alloca")
+        codegenContext.storeValueDecl(loopVar, iteratorAlloca)
+
+        val isRangeReversed = !statement.isReversed
+        val (initialValue, stopValue, step) = if (isRangeReversed) {
+            Triple(processExpression(statement.rangeStart), processExpression(statement.rangeEnd), constants.iOne)
+        } else {
+            Triple(processExpression(statement.rangeEnd), processExpression(statement.rangeStart), constants.iMinusOne)
+        }
+
+        LLVMBuildStore(builder, initialValue, iteratorAlloca)
+
+        LLVMAppendExistingBasicBlock(function, entryBlock)
+        LLVMBuildBr(builder, entryBlock)
+        val loopBodyBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "loop-body")
+        LLVMPositionBuilderAtEnd(builder, loopBodyBlock)
+
+        processBody(statement.body)
+
+        if (!statement.body.isTerminating) {
+            LLVMBuildBr(builder, latchBlock)
+        }
+
+        LLVMAppendExistingBasicBlock(function, latchBlock)
+        LLVMPositionBuilderAtEnd(builder, latchBlock)
+
+        val iterValue = LLVMBuildLoad2(builder, primaryTypes.integerType, iteratorAlloca, "iter-load")
+        val newIterValue = LLVMBuildAdd(builder, iterValue, step, "iter-inc")
+        LLVMBuildStore(builder, newIterValue, iteratorAlloca)
+
+        LLVMBuildBr(builder, entryBlock)
+
+        LLVMAppendExistingBasicBlock(function, exitBlock)
+
+        LLVMPositionBuilderAtEnd(builder, entryBlock)
+
+        val iterLoad = LLVMBuildLoad2(builder, primaryTypes.integerType, iteratorAlloca, "iter-load")
+
+        val condition = if (statement.isReversed) {
+            LLVMBuildICmp(builder, LLVMIntSGE, iterLoad, stopValue, "cmp-forward")
+        } else {
+            LLVMBuildICmp(builder, LLVMIntSLE, iterLoad, stopValue, "cmp-reverse")
+        }
+
+        LLVMBuildCondBr(builder, condition, loopBodyBlock, exitBlock)
+
+        LLVMPositionBuilderAtEnd(builder, exitBlock)
+
+        popContext()
+    }
+
+
+    /**
+     *                │
+     *        ┌───────▼──────┐
+     *      ┌─►  loop-entry  │
+     *      │ │  (condition) │ false┌─────────┐
+     *      │ └───────┬──────┴─────►│loop-exit│
+     *      │         │true         └─────────┘
+     *      │     ┌───▼──┐
+     *      │     │ body │
+     *      │     └───┬──┘
+     *      └─────────┘
+     *
+     *  (based on https://llvm.org/docs/LoopTerminology.html)
+     */
+    private fun processWhileLoop(statement: WhileLoop) {
+        val function = codegenContext.currentFunction
+        val entryBlock = LLVMAppendBasicBlockInContext(llvmContext, function, "loop-entry")
+        val exitBlock = LLVMCreateBasicBlockInContext(llvmContext, "loop-exit")
+
+        pushContext(currentLoopContinueTo = entryBlock, currentLoopBreakTo = exitBlock)
+        LLVMBuildBr(builder, entryBlock)
+
+        val loopBody = LLVMAppendBasicBlockInContext(llvmContext, function, "loop-body")
+        LLVMPositionBuilderAtEnd(builder, loopBody)
+
+        processBody(statement.body)
+
+        if (!statement.body.isTerminating) {
+            LLVMBuildBr(builder, entryBlock)
+        }
+
+        LLVMAppendExistingBasicBlock(function, exitBlock)
+
+        LLVMPositionBuilderAtEnd(builder, entryBlock)
+        val condition = processExpression(statement.condition)
+        val cmpValue = LLVMBuildICmp(builder, LLVMIntEQ, condition, constants.trueConst, "loop-cond")
+        LLVMBuildCondBr(builder, cmpValue, loopBody, exitBlock)
+
+        LLVMPositionBuilderAtEnd(builder, exitBlock)
+
+        popContext()
+    }
+
+    private fun processBreak() {
+        LLVMBuildBr(builder, codegenContext.currentLoopBreakTo)
+    }
+
+    private fun processContinue() {
+        LLVMBuildBr(builder, codegenContext.currentLoopContinueTo)
+    }
+
     private fun processTypeDeclaration(declaration: TypeDeclaration) {
         LLVMStructCreateNamed(llvmContext, declaration.name)
     }
@@ -615,13 +753,22 @@ class CodeGenerator : Closeable {
                 IntegerType -> 32
                 RealType -> 64
                 is ArrayType -> this.contentType.sizeof * (this.size ?: 0)
-                is RecordType -> TODO()
+                is RecordType -> this.fields.sumOf { it.second.sizeof }
                 else -> 0
             }
         }
 
-    private fun pushContext() {
-        codegenContext = CodeGenContext(codegenContext)
+    private fun pushContext(
+        function: LLVMValueRef? = null,
+        currentLoopContinueTo: LLVMBasicBlockRef? = null,
+        currentLoopBreakTo: LLVMBasicBlockRef? = null,
+    ) {
+        codegenContext = CodeGenContext(
+            codegenContext,
+            _currentFunction = function,
+            _currentLoopContinueTo = currentLoopContinueTo,
+            _currentLoopBreakTo = currentLoopBreakTo
+        )
     }
 
     private fun popContext() {
@@ -629,12 +776,8 @@ class CodeGenerator : Closeable {
     }
 
     private fun getLastBasicBlock(): LLVMBasicBlockRef {
-        val function = getLastFunction()
+        val function = codegenContext.currentFunction
         return LLVMGetLastBasicBlock(function)
-    }
-
-    private fun getLastFunction(): LLVMValueRef {
-        return LLVMGetLastFunction(module)
     }
 
     private fun withContext(func: () -> Unit) {

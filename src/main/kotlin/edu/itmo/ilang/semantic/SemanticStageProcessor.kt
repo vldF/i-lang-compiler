@@ -17,6 +17,7 @@ class SemanticStageProcessor {
         FunctionReturnChecker(),
         BreakAndContinueInsideCyclesChecker(),
 //        AssignNewValueToArgument(), todo: enable when it will be implemented
+//        ForRangeIsInteger(), todo: enable when it will be implemented
     )
 
     private val transformers = listOf(
