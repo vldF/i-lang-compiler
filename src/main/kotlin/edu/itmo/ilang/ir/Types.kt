@@ -17,15 +17,21 @@ data object MuParameter : Type
 data object Nothing : Type
 
 sealed interface UserType : Type {
-    var identifier: String?
+    val identifier: String?
+
+    fun withIdentifier(identifier: String): UserType
 }
 
 data class ArrayType(
-    override var identifier: String?,
+    override val identifier: String?,
     var contentType: Type,
 ) : UserType {
     // null specify any size. Used for parameter declaration
     var size: Int? = null
+
+    override fun withIdentifier(identifier: String): UserType {
+        return ArrayType(identifier, contentType)
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -40,14 +46,18 @@ data class ArrayType(
     }
 
     override fun hashCode(): Int {
-        return identifier?.hashCode() ?: 0
+        return identifier.hashCode()
     }
 }
 
 data class RecordType(
-    override var identifier: String?,
+    override val identifier: String?,
     var fields: List<Pair<String, Type>>,
 ) : UserType {
+    override fun withIdentifier(identifier: String): UserType {
+        return RecordType(identifier, fields)
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -61,7 +71,7 @@ data class RecordType(
     }
 
     override fun hashCode(): Int {
-        return identifier?.hashCode() ?: 0
+        return identifier.hashCode()
     }
 }
 

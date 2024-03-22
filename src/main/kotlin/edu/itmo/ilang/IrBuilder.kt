@@ -67,9 +67,9 @@ class IrBuilder : iLangParserBaseVisitor<IrEntry>() {
         val symbolInfo = SymbolInfo(MuParameter, null)
         symbolTable.addSymbol(name, symbolInfo)
 
-        val type = visitType(ctx.type())
+        var type = visitType(ctx.type())
         if (type is UserType) {
-            type.identifier = name
+            type = type.withIdentifier(name)
         }
         if (type is RecordType) {
             extractMuParameters(type, type)
