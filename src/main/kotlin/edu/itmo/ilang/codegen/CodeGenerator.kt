@@ -237,7 +237,7 @@ class CodeGenerator : Closeable {
 
     private fun processVariableDeclaration(declaration: VariableDeclaration) {
         val name = declaration.name
-        val type = declaration.type.llvmDeclType
+        val type = declaration.type.llvmValueType
 
         val allocaValue = LLVMBuildAlloca(builder, type, name)
         codegenContext.storeValueDecl(declaration, allocaValue)
@@ -248,15 +248,16 @@ class CodeGenerator : Closeable {
     }
 
     private fun createVariableInitializerValue(declaration: VariableDeclaration): LLVMValueRef? {
+        val type = declaration.type
         val initialExpression = declaration.initialExpression
 
         val initialValue = if (initialExpression == null || initialExpression == UninitializedLiteral) {
             null
         } else {
-            processExpression(initialExpression)
+            return processExpression(initialExpression)
         }
 
-        return when (val type = declaration.type) {
+        return when (type) {
             is ArrayType -> {
                 val elementType = type.contentType.llvmValueType
                 val arraySizeInBytes = LLVMConstInt(
@@ -279,6 +280,13 @@ class CodeGenerator : Closeable {
 
                 wrapperAlloc
             }
+
+            is RecordType -> {
+                val llvmType = type.llvmDeclType
+
+                LLVMBuildMalloc(builder, llvmType, "structure-malloc")
+            }
+
             else -> {
                 initialValue
             }
@@ -498,10 +506,13 @@ class CodeGenerator : Closeable {
     }
 
     private fun getPointerToStructField(accessedExpression: AccessExpression, fieldIndex: Int): LLVMValueRef {
+        val structPtrPtr = processAccessExpressionAsLhs(accessedExpression)
+        val structPtr = LLVMBuildLoad2(builder, accessedExpression.type.llvmValueType, structPtrPtr, "load-struct-ptr")
+
         return LLVMBuildStructGEP2(
             builder,
             accessedExpression.type.llvmDeclType,
-            processAccessExpressionAsLhs(accessedExpression),
+            structPtr,
             fieldIndex,
             "get_field"
         )
@@ -584,7 +595,7 @@ class CodeGenerator : Closeable {
         )
 
         if (call.type is RecordType) {
-            return LLVMBuildLoad2(builder, routineType.llvmDeclType, resultValue, "load-return-value")
+            return LLVMBuildLoad2(builder, types.pointerType, resultValue, "load-return-value")
         }
 
         return resultValue
