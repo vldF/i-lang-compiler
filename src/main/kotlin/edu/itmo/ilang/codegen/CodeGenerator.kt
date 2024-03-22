@@ -237,7 +237,7 @@ class CodeGenerator : Closeable {
 
     private fun processVariableDeclaration(declaration: VariableDeclaration) {
         val name = declaration.name
-        val type = declaration.type.llvmType
+        val type = declaration.type.llvmDeclType
 
         val allocaValue = LLVMBuildAlloca(builder, type, name)
         codegenContext.storeValueDecl(declaration, allocaValue)
@@ -258,7 +258,7 @@ class CodeGenerator : Closeable {
 
         return when (val type = declaration.type) {
             is ArrayType -> {
-                val elementType = type.contentType.llvmType
+                val elementType = type.contentType.llvmValueType
                 val arraySizeInBytes = LLVMConstInt(
                     types.integerType,
                     type.sizeof,
@@ -288,8 +288,12 @@ class CodeGenerator : Closeable {
     private fun processReturn(statement: Return) {
         val expression = statement.expression
         if (expression != null) {
-            val value = processExpression(expression)
-            LLVMBuildRet(builder, value)
+            val res = when (expression.type) {
+                is RecordType -> getValueOrPointerIfUserType(expression)
+                else -> processExpression(expression)
+            }
+
+            LLVMBuildRet(builder, res)
         } else {
             LLVMBuildRetVoid(builder)
         }
@@ -453,7 +457,7 @@ class CodeGenerator : Closeable {
             }
             is ArrayAccessExpression -> {
                 val pointer = getPointerToArrayElement(expression)
-                val elementType = expression.arrayType.contentType.llvmType
+                val elementType = expression.arrayType.contentType.llvmValueType
 
                 LLVMBuildLoad2(builder, elementType, pointer, "load-array-elem")
             }
@@ -461,7 +465,7 @@ class CodeGenerator : Closeable {
                 val idx = expression.getFieldIndex
                 val pointer = getPointerToStructField(expression.accessedExpression, idx)
 
-                val fieldType = expression.type.llvmType
+                val fieldType = expression.type.llvmValueType
 
                 return LLVMBuildLoad2(builder, fieldType, pointer, "load-field")
             }
@@ -469,7 +473,7 @@ class CodeGenerator : Closeable {
     }
 
     private fun getPointerToArrayElement(arrayAccess: ArrayAccessExpression): LLVMValueRef {
-        val elemType = arrayAccess.arrayType.contentType.llvmType
+        val elemType = arrayAccess.arrayType.contentType.llvmValueType
         val arrayType = LLVMPointerTypeInContext(llvmContext, 0)
 
         val arrayWrapperPtrAlloca = processAccessExpressionAsLhs(arrayAccess.accessedExpression)
@@ -496,7 +500,7 @@ class CodeGenerator : Closeable {
     private fun getPointerToStructField(accessedExpression: AccessExpression, fieldIndex: Int): LLVMValueRef {
         return LLVMBuildStructGEP2(
             builder,
-            accessedExpression.type.llvmType,
+            accessedExpression.type.llvmDeclType,
             processAccessExpressionAsLhs(accessedExpression),
             fieldIndex,
             "get_field"
@@ -558,18 +562,19 @@ class CodeGenerator : Closeable {
     private fun processRoutineCall(call: RoutineCall): LLVMValueRef {
         val routineSignature = call.routineDeclaration.signatureType
         val routineName = call.routineDeclaration.name
+        val routineType = call.routineDeclaration.type.returnType
         val function = LLVMGetNamedFunction(module, routineName)
 
         val args = call.arguments.asCallArgValues
 
         // we should pass no instruction name if its return type is void
-        val callInstrName = if (call.routineDeclaration.type.returnType !is UnitType) {
+        val callInstrName = if (routineType !is UnitType) {
             routineName + "_call"
         } else {
             ""
         }
 
-        return LLVMBuildCall2(
+        val resultValue = LLVMBuildCall2(
             builder,
             routineSignature,
             function,
@@ -577,6 +582,12 @@ class CodeGenerator : Closeable {
             call.arguments.size,
             callInstrName
         )
+
+        if (call.type is RecordType) {
+            return LLVMBuildLoad2(builder, routineType.llvmDeclType, resultValue, "load-return-value")
+        }
+
+        return resultValue
     }
 
     private val List<Expression>.asCallArgValues: PointerPointer<LLVMValueRef>
@@ -744,25 +755,31 @@ class CodeGenerator : Closeable {
 
     private val RoutineDeclaration.signatureType: LLVMTypeRef
         get() {
-            val retType = this.type.returnType.llvmType
+            val retType = this.type.returnType.llvmValueType
             val argumentTypes = this.type.argumentTypes.functionArgTypes
             return LLVMFunctionType(retType, argumentTypes, this.type.argumentTypes.size, /* IsVarArg = */ 0)
         }
 
-    private val Type.llvmType: LLVMTypeRef
+    private val Type.llvmValueType: LLVMTypeRef
         get() = when(this) {
             is IntegerType -> types.integerType
             is RealType -> types.doubleType
             is BoolType -> types.boolType
             is UnitType -> types.voidType
             is ArrayType -> types.arrayWrapperType
-            is RecordType -> LLVMStructTypeInContext(llvmContext, this.elementTypes, this.fields.size, /* Packed = */ 0) // todo
+            is RecordType -> types.pointerType
             else -> report("unsupported type $this")
+        }
+
+    private val Type.llvmDeclType: LLVMTypeRef
+        get() = when(this) {
+            is RecordType -> LLVMStructTypeInContext(llvmContext, this.elementTypes, this.fields.size, /* Packed = */ 0)
+            else -> llvmValueType
         }
 
     private val RecordType.elementTypes: PointerPointer<LLVMTypeRef>
         get() {
-            val elementTypes = fields.map { it.second.llvmType }.toTypedArray()
+            val elementTypes = fields.map { it.second.llvmValueType }.toTypedArray()
             val elementTypePointer = PointerPointer<LLVMTypeRef>(fields.size.toLong())
             elementTypePointer.put(*elementTypes)
 
@@ -773,8 +790,8 @@ class CodeGenerator : Closeable {
     private val Collection<Type>.functionArgTypes: PointerPointer<LLVMTypeRef>
         get() = PointerPointer(*this.map {
             when (it) {
-                is UserType -> LLVMPointerType(it.llvmType, 0)
-                else -> it.llvmType
+                is UserType -> LLVMPointerType(it.llvmValueType, 0)
+                else -> it.llvmValueType
             }
         }.toTypedArray())
 
