@@ -58,7 +58,7 @@ routine main() : bool is
     arr[3] := 3
     arr[4] := 0
     arr[5] := 1
-    quickSort(arr)
+    quickSort(arr, 1, arr.size)
 
     return isSorted(arr)
 end

@@ -260,14 +260,26 @@ class CodeGenerator : Closeable {
         return when (type) {
             is ArrayType -> {
                 val elementType = type.contentType.llvmValueType
+                val sizeInElements = type.size!!.toLong()
                 val arraySizeInBytes = LLVMConstInt(
                     types.integerType,
                     type.sizeof,
                     /* SignExtend = */ 0)
 
-                val arrayMalloc = LLVMBuildArrayMalloc(builder, elementType, arraySizeInBytes, "array-initializer")
                 val wrapperAlloc = LLVMBuildAlloca(builder, types.arrayWrapperType, "array-wrapper-alloca")
 
+                val sizeValue = LLVMConstInt(types.integerType, sizeInElements, /* SignExtend = */ 0)
+                val sizePtr = LLVMBuildStructGEP2(
+                    builder,
+                    types.arrayWrapperType,
+                    wrapperAlloc,
+                    0,
+                    "get-array-ptr-in-wrapper"
+                )
+
+                LLVMBuildStore(builder, sizeValue, sizePtr)
+
+                val arrayMalloc = LLVMBuildArrayMalloc(builder, elementType, arraySizeInBytes, "array-initializer")
                 val arrayPtr = LLVMBuildStructGEP2(
                     builder,
                     types.arrayWrapperType,
@@ -447,6 +459,11 @@ class CodeGenerator : Closeable {
     private val FieldAccessExpression.getFieldIndex: Int
         get() {
             val field = this.field
+            if (this.accessedType is ArrayType && field == "size") {
+                // this is array.size syntax
+                return 0 // 0 is the size of the array in the array wrapper
+            }
+
             return (this.accessedType as RecordType).fields.indexOfFirst { it.first == field }
         }
 
@@ -506,8 +523,13 @@ class CodeGenerator : Closeable {
     }
 
     private fun getPointerToStructField(accessedExpression: AccessExpression, fieldIndex: Int): LLVMValueRef {
-        val structPtrPtr = processAccessExpressionAsLhs(accessedExpression)
-        val structPtr = LLVMBuildLoad2(builder, accessedExpression.type.llvmValueType, structPtrPtr, "load-struct-ptr")
+        val structPtr = if (accessedExpression.type is ArrayType) {
+            // special case for .size syntax
+            processAccessExpressionAsLhs(accessedExpression)
+        } else {
+            val structPtrPtr = processAccessExpressionAsLhs(accessedExpression)
+            LLVMBuildLoad2(builder, accessedExpression.type.llvmValueType, structPtrPtr, "load-struct-ptr")
+        }
 
         return LLVMBuildStructGEP2(
             builder,
@@ -527,7 +549,7 @@ class CodeGenerator : Closeable {
         var leftValue = processExpression(left)
         var rightValue = processExpression(right)
 
-        if (left.type is IntegerType) {
+        if (left.type is IntegerType || left.type is BoolType) {
             if (right.type is RealType) {
                 // right is real -> generalize left to real
                 leftValue = LLVMBuildSIToFP(
@@ -610,7 +632,14 @@ class CodeGenerator : Closeable {
 
     private fun getValueOrPointerIfUserType(expression: Expression): LLVMValueRef {
         return when (expression) {
-            is AccessExpression -> processAccessExpressionAsLhs(expression)
+            is ArrayAccessExpression -> processAccessExpressionAsLhs(expression)
+            is VariableAccessExpression -> {
+                if (expression.type is RecordType || expression.type is ArrayType) {
+                    processAccessExpressionAsLhs(expression)
+                } else {
+                    processExpression(expression)
+                }
+            }
             else -> processExpression(expression)
         }
     }

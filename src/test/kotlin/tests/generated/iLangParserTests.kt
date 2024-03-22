@@ -32,6 +32,11 @@ class iLangParserTests {
     }
     
     @Test
+    fun array_size_test() {
+        ParserTestsRunner.run("array_size")
+    }
+    
+    @Test
     fun arrays_test() {
         ParserTestsRunner.run("arrays")
     }

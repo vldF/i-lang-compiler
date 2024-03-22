@@ -32,6 +32,11 @@ class iLangIrBuilderTests {
     }
     
     @Test
+    fun array_size_test() {
+        IrBuilderTestsRunner.run("array_size")
+    }
+    
+    @Test
     fun arrays_test() {
         IrBuilderTestsRunner.run("arrays")
     }
