@@ -29,6 +29,24 @@ class CodeGenerator : Closeable {
         val doubleType: LLVMTypeRef = LLVMDoubleTypeInContext(llvmContext)
         val boolType: LLVMTypeRef = LLVMInt1TypeInContext(llvmContext)
         val voidType: LLVMTypeRef = LLVMVoidTypeInContext(llvmContext)
+        val pointerType: LLVMTypeRef = LLVMPointerTypeInContext(llvmContext, /* AddressSpace = */ 0)
+        val arrayWrapperType: LLVMTypeRef = buildArrayWrapperType()
+
+        /**
+         * Array wrapper saves a pointer to array itself and its size
+         */
+        private fun buildArrayWrapperType(): LLVMTypeRef {
+            val elementTypes = PointerPointer<LLVMTypeRef>(2)
+            elementTypes.put(0, integerType)
+            elementTypes.put(1, pointerType)
+
+            return LLVMStructTypeInContext(
+                llvmContext,
+                elementTypes,
+                /* ElementCount = */ 2,
+                /* Packed = */ 0
+            )
+        }
     }
 
     inner class Constants {
@@ -246,7 +264,20 @@ class CodeGenerator : Closeable {
                     type.sizeof,
                     /* SignExtend = */ 0)
 
-                return LLVMBuildArrayMalloc(builder, elementType, arraySizeInBytes, "array-initializer")
+                val arrayMalloc = LLVMBuildArrayMalloc(builder, elementType, arraySizeInBytes, "array-initializer")
+                val wrapperAlloc = LLVMBuildAlloca(builder, primaryTypes.arrayWrapperType, "array-wrapper-alloca")
+
+                val arrayPtr = LLVMBuildStructGEP2(
+                    builder,
+                    primaryTypes.arrayWrapperType,
+                    wrapperAlloc,
+                    1,
+                    "get-array-ptr-in-wrapper"
+                )
+
+                LLVMBuildStore(builder, arrayMalloc, arrayPtr)
+
+                wrapperAlloc
             }
             else -> {
                 initialValue
@@ -438,14 +469,16 @@ class CodeGenerator : Closeable {
     }
 
     private fun getPointerToArrayElement(arrayAccess: ArrayAccessExpression): LLVMValueRef {
-        val arrType = arrayAccess.arrayType.llvmType
         val elemType = arrayAccess.arrayType.contentType.llvmType
+        val arrayType = LLVMPointerTypeInContext(llvmContext, 0)
 
-        val accessedExpression = processAccessExpressionAsLhs(arrayAccess.accessedExpression)
-        val loadArr = LLVMBuildLoad2(builder, arrType, accessedExpression, "load-arr")
+        val arrayWrapperPtrAlloca = processAccessExpressionAsLhs(arrayAccess.accessedExpression)
+        val arrayWrapperAlloca = LLVMBuildLoad2(builder, primaryTypes.pointerType, arrayWrapperPtrAlloca, "load-wrapper")
+        val arrayPtr = LLVMBuildStructGEP2(builder, primaryTypes.arrayWrapperType, arrayWrapperAlloca, 1, "array-ptr")
+        val loadArray = LLVMBuildLoad2(builder, arrayType, arrayPtr, "load-arr")
 
-        val idx = processExpression(arrayAccess.indexExpression ?: error("index must be not null!")) // todo
         // as far as our array indexes starts with 1, we need to subtract 1 from it
+        val idx = processExpression(arrayAccess.indexExpression!!)
         val idxPlusOne = LLVMBuildSub(builder, idx, constants.iOne, "array-index-correction")
         val idxPointerPointer = PointerPointer<LLVMValueRef>(/* size = */ 1)
         idxPointerPointer.put(0, idxPlusOne)
@@ -453,7 +486,7 @@ class CodeGenerator : Closeable {
         return LLVMBuildGEP2(
             builder,
             elemType,
-            loadArr,
+            loadArray,
             idxPointerPointer,
             1,
             "array-access"
@@ -721,9 +754,9 @@ class CodeGenerator : Closeable {
             is IntegerType -> primaryTypes.integerType
             is RealType -> primaryTypes.doubleType
             is BoolType -> primaryTypes.boolType
-            UnitType -> primaryTypes.voidType
-            is ArrayType -> LLVMPointerTypeInContext(llvmContext, 0)
-            is RecordType -> LLVMStructTypeInContext(llvmContext, this.elementTypes, this.fields.size, /* Packed = */ 0)
+            is UnitType -> primaryTypes.voidType
+            is ArrayType -> primaryTypes.arrayWrapperType
+            is RecordType -> LLVMStructTypeInContext(llvmContext, this.elementTypes, this.fields.size, /* Packed = */ 0) // todo
             else -> report("unsupported type $this")
         }
 
