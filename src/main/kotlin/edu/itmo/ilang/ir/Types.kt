@@ -33,7 +33,10 @@ data class ArrayType(
 
         other as ArrayType
 
-        return identifier == other.identifier
+        if (identifier != other.identifier) return false
+        if (contentType !== other.contentType) return false
+
+        return true
     }
 
     override fun hashCode(): Int {
@@ -51,7 +54,10 @@ data class RecordType(
 
         other as RecordType
 
-        return identifier == other.identifier
+        if (identifier != other.identifier) return false
+        if (fields !== other.fields) return false
+
+        return true
     }
 
     override fun hashCode(): Int {
