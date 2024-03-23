@@ -127,6 +127,11 @@ class iLangCodeGenTests {
     }
     
     @Test
+    fun return_array_test() {
+        CodeGenTestsRunner.run("return_array")
+    }
+    
+    @Test
     fun return_statements_in_if_branches_test() {
         CodeGenTestsRunner.run("return_statements_in_if_branches")
     }

@@ -127,6 +127,11 @@ class iLangParserTests {
     }
     
     @Test
+    fun return_array_test() {
+        ParserTestsRunner.run("return_array")
+    }
+    
+    @Test
     fun return_statements_in_if_branches_test() {
         ParserTestsRunner.run("return_statements_in_if_branches")
     }

@@ -127,6 +127,11 @@ class iLangIrBuilderTests {
     }
     
     @Test
+    fun return_array_test() {
+        IrBuilderTestsRunner.run("return_array")
+    }
+    
+    @Test
     fun return_statements_in_if_branches_test() {
         IrBuilderTestsRunner.run("return_statements_in_if_branches")
     }

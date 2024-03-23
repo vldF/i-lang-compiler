@@ -25,7 +25,7 @@ class CodeGenerator : Closeable {
     private var codegenContext = CodeGenContext()
 
     inner class PrimaryTypes {
-        val integerType: LLVMTypeRef = LLVMInt32TypeInContext(llvmContext)
+        val integerType: LLVMTypeRef = LLVMInt64TypeInContext(llvmContext)
         val doubleType: LLVMTypeRef = LLVMDoubleTypeInContext(llvmContext)
         val boolType: LLVMTypeRef = LLVMInt1TypeInContext(llvmContext)
         val voidType: LLVMTypeRef = LLVMVoidTypeInContext(llvmContext)
@@ -263,7 +263,7 @@ class CodeGenerator : Closeable {
                 val sizeInElements = type.size!!.toLong()
                 val arraySizeInBytes = LLVMConstInt(
                     types.integerType,
-                    type.sizeof,
+                    sizeInElements,
                     /* SignExtend = */ 0)
 
                 val wrapperAlloc = LLVMBuildAlloca(builder, types.arrayWrapperType, "array-wrapper-alloca")
@@ -499,7 +499,7 @@ class CodeGenerator : Closeable {
 
     private fun getPointerToArrayElement(arrayAccess: ArrayAccessExpression): LLVMValueRef {
         val elemType = arrayAccess.arrayType.contentType.llvmType
-        val arrayType = LLVMPointerTypeInContext(llvmContext, 0)
+        val arrayType = types.pointerType
 
         val arrayWrapperPtrAlloca = processAccessExpressionAsLhs(arrayAccess.accessedExpression)
         val arrayWrapperAlloca = LLVMBuildLoad2(builder, types.pointerType, arrayWrapperPtrAlloca, "load-wrapper")
