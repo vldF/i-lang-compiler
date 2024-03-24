@@ -1,3 +1,5 @@
+// main(): 3.0
+
 routine avg(arr : array[] integer) : real is
     var sum : integer is 0
 
