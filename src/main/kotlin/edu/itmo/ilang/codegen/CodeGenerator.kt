@@ -502,9 +502,8 @@ class CodeGenerator : Closeable {
         val arrayType = types.pointerType
 
         val arrayWrapperPtrAlloca = processAccessExpressionAsLhs(arrayAccess.accessedExpression)
-        val arrayWrapperAlloca = LLVMBuildLoad2(builder, types.pointerType, arrayWrapperPtrAlloca, "load-wrapper")
-        val arrayPtr = LLVMBuildStructGEP2(builder, types.arrayWrapperType, arrayWrapperAlloca, 1, "array-ptr")
-        val loadArray = LLVMBuildLoad2(builder, arrayType, arrayPtr, "load-arr")
+        val arrayPtr = LLVMBuildStructGEP2(builder, types.arrayWrapperType, arrayWrapperPtrAlloca, 1, "array-ptr")
+        val loadArrayPtr = LLVMBuildLoad2(builder, types.pointerType, arrayPtr, "load-arr")
 
         // as far as our array indexes starts with 1, we need to subtract 1 from it
         val idx = processExpression(arrayAccess.indexExpression!!)
