@@ -274,7 +274,7 @@ class CodeGenerator : Closeable {
                     types.arrayWrapperType,
                     wrapperAlloc,
                     0,
-                    "get-array-ptr-in-wrapper"
+                    "get-size-ptr-in-wrapper"
                 )
 
                 LLVMBuildStore(builder, sizeValue, sizePtr)
