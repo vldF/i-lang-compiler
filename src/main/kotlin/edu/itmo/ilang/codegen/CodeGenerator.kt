@@ -290,7 +290,7 @@ class CodeGenerator : Closeable {
 
                 LLVMBuildStore(builder, arrayMalloc, arrayPtr)
 
-                wrapperAlloc
+                LLVMBuildLoad2(builder, types.arrayWrapperType, wrapperAlloc, "load-wrapper")
             }
 
             is RecordType -> {
@@ -724,9 +724,9 @@ class CodeGenerator : Closeable {
         val iterLoad = LLVMBuildLoad2(builder, types.integerType, iteratorAlloca, "iter-load")
 
         val condition = if (statement.isReversed) {
-            LLVMBuildICmp(builder, LLVMIntSGE, iterLoad, stopValue, "cmp-forward")
+            LLVMBuildICmp(builder, LLVMIntSGE, iterLoad, stopValue, "cmp-reverse")
         } else {
-            LLVMBuildICmp(builder, LLVMIntSLE, iterLoad, stopValue, "cmp-reverse")
+            LLVMBuildICmp(builder, LLVMIntSLE, iterLoad, stopValue, "cmp-forward")
         }
 
         LLVMBuildCondBr(builder, condition, loopBodyBlock, exitBlock)
