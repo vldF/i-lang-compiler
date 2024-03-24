@@ -600,13 +600,13 @@ class CodeGenerator : Closeable {
     private fun processRoutineCall(call: RoutineCall): LLVMValueRef {
         val routineSignature = call.routineDeclaration.signatureType
         val routineName = call.routineDeclaration.name
-        val routineType = call.routineDeclaration.type.returnType
+        val routineReturnType = call.routineDeclaration.type.returnType
         val function = LLVMGetNamedFunction(module, routineName)
 
         val args = call.arguments.asCallArgValues
 
         // we should pass no instruction name if its return type is void
-        val callInstrName = if (routineType !is UnitType) {
+        val callInstrName = if (routineReturnType !is UnitType) {
             routineName + "_call"
         } else {
             ""
@@ -639,7 +639,7 @@ class CodeGenerator : Closeable {
         return when (expression) {
             is ArrayAccessExpression -> processAccessExpressionAsLhs(expression)
             is VariableAccessExpression -> {
-                if (expression.type is RecordType || expression.type is ArrayType) {
+                if (expression.type is UserType) {
                     processAccessExpressionAsLhs(expression)
                 } else {
                     processExpression(expression)
