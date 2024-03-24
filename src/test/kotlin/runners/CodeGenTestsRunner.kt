@@ -38,7 +38,7 @@ object CodeGenTestsRunner : ParseAwareTestRunner() {
 
     private fun LLVMInterpreter.executeFunction(meta: ExecutionMeta): Any? {
         return when (val expectedResult = meta.expectedResult) {
-            is Long -> this.interpretWithIntegerResult(meta.routineName, meta.args)
+            is Int -> this.interpretWithIntegerResult(meta.routineName, meta.args)
             is Boolean -> this.interpretWithBooleanResult(meta.routineName, meta.args)
             is Double -> this.interpretWithRealResult(meta.routineName, meta.args)
             null -> {
@@ -91,11 +91,11 @@ object CodeGenTestsRunner : ParseAwareTestRunner() {
 
     private val String.asValue: Any?
         get() {
-            val asLong = this.toLongOrNull()
+            val asInt = this.toIntOrNull()
             val asDouble = this.toDoubleOrNull()
             val asBoolean = this.toBooleanStrictOrNull()
 
-            return asLong ?: asDouble ?: asBoolean
+            return asInt ?: asDouble ?: asBoolean
         }
 
     data class ExecutionMeta(

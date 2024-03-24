@@ -17,8 +17,8 @@ class LLVMInterpreter(private val module: LLVMModuleRef) {
     private val engine = LLVMExecutionEngineRef()
     private val options = LLVMMCJITCompilerOptions()
 
-    fun interpretWithIntegerResult(routineName: String, args: List<Any>): Long {
-        return interpret(routineName, args, ValueLayout.JAVA_LONG) as Long
+    fun interpretWithIntegerResult(routineName: String, args: List<Any>): Int {
+        return interpret(routineName, args, ValueLayout.JAVA_INT) as Int
     }
 
     fun interpretWithRealResult(routineName: String, args: List<Any>): Double {
@@ -63,7 +63,7 @@ class LLVMInterpreter(private val module: LLVMModuleRef) {
     private fun getFunctionDescriptor(args: List<Any>, returnLayout: ValueLayout?): FunctionDescriptor {
         val argsLayouts = args.map { arg ->
             when (arg) {
-                is Long -> ValueLayout.JAVA_LONG
+                is Int -> ValueLayout.JAVA_INT
                 is Double -> ValueLayout.JAVA_DOUBLE
                 is Boolean -> ValueLayout.JAVA_BOOLEAN
                 else -> error("can't parse $arg")
