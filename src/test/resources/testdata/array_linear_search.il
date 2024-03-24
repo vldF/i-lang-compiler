@@ -1,3 +1,5 @@
+// main(): 6
+
 routine firstIndex(elem : integer, arr : array[] integer) : integer is
     for i in 1..(arr.size) loop
         if arr[i] = elem then

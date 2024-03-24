@@ -1,3 +1,5 @@
+// main(): 3
+
 routine count(elem : integer, arr : array[] integer) : integer is
     var res is 0
 
