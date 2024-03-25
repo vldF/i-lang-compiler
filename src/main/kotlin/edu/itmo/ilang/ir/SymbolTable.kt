@@ -2,6 +2,7 @@ package edu.itmo.ilang.ir
 
 import edu.itmo.ilang.ir.model.Declaration
 import edu.itmo.ilang.ir.model.Type
+import edu.itmo.ilang.ir.model.VariableDeclaration.Companion.MAIN_ROUTINE_SYNTHETIC_NAME
 import edu.itmo.ilang.util.report
 
 data class SymbolInfo(
@@ -32,6 +33,9 @@ class SymbolTable {
     private fun addSymbol(symbol: String, symbolInfo: SymbolInfo, scope: MutableMap<String, SymbolInfo>) {
         if (scope.containsKey(symbol)) {
             report("$symbol already defined in current scope")
+        }
+        if (symbol.startsWith("$") && symbol != MAIN_ROUTINE_SYNTHETIC_NAME) {
+            report("symbols starting with ` are prohibited: $symbol")
         }
 
         scope[symbol] = symbolInfo

@@ -11,7 +11,11 @@ data class VariableDeclaration(
     override val name: String,
     override val type: Type,
     val initialExpression: Expression?,
-) : ValueDeclaration, BodyEntry
+) : ValueDeclaration, BodyEntry {
+    companion object {
+        const val MAIN_ROUTINE_SYNTHETIC_NAME = "\$main"
+    }
+}
 
 data class TypeDeclaration(
     override val name: String,

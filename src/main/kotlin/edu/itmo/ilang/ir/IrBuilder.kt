@@ -2,6 +2,7 @@ package edu.itmo.ilang.ir
 
 import edu.itmo.ilang.ir.model.Nothing
 import edu.itmo.ilang.ir.model.*
+import edu.itmo.ilang.ir.model.VariableDeclaration.Companion.MAIN_ROUTINE_SYNTHETIC_NAME
 import edu.itmo.ilang.util.report
 import iLangParser.*
 import iLangParserBaseVisitor
@@ -95,7 +96,10 @@ class IrBuilder : iLangParserBaseVisitor<IrEntry>() {
     }
 
     override fun visitRoutineDeclaration(ctx: RoutineDeclarationContext): RoutineDeclaration {
-        val name = ctx.Identifier().text
+        var name = ctx.Identifier().text
+        if (name == "main") {
+            name = MAIN_ROUTINE_SYNTHETIC_NAME
+        }
         val returnType = ctx.type()?.let { visitType(it) } ?: UnitType
 
         return symbolTable.withScope {
@@ -191,7 +195,11 @@ class IrBuilder : iLangParserBaseVisitor<IrEntry>() {
     }
 
     private fun visitRoutineCall(routineName: String, args: List<ExpressionContext>?): RoutineCall {
-        val declaration = symbolTable.lookup<RoutineDeclaration>(routineName)?.declaration
+        var name = routineName
+        if (name == "main") {
+            name = MAIN_ROUTINE_SYNTHETIC_NAME
+        }
+        val declaration = symbolTable.lookup<RoutineDeclaration>(name)?.declaration
             ?: report("unknown symbol $routineName")
         val expressions = args?.map { visitExpression(it) } ?: emptyList()
 

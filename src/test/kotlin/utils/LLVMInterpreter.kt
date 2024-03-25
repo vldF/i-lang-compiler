@@ -1,5 +1,6 @@
 package utils
 
+import edu.itmo.ilang.ir.model.VariableDeclaration.Companion.MAIN_ROUTINE_SYNTHETIC_NAME
 import org.bytedeco.javacpp.BytePointer
 import org.bytedeco.llvm.LLVM.LLVMExecutionEngineRef
 import org.bytedeco.llvm.LLVM.LLVMMCJITCompilerOptions
@@ -38,7 +39,8 @@ class LLVMInterpreter(private val module: LLVMModuleRef) {
             error("Failed to create JIT compiler: " + errorBuffer.string)
         }
 
-        val functionAddress = LLVMGetFunctionAddress(engine, routineName)
+        val name = if (routineName == "main") MAIN_ROUTINE_SYNTHETIC_NAME else routineName
+        val functionAddress = LLVMGetFunctionAddress(engine, name)
         val addressSegment = MemorySegment.ofAddress(functionAddress)
         val nativeLinker = Linker.nativeLinker()
         val functionDescriptor = getFunctionDescriptor(args, returnLayout)
