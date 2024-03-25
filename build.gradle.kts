@@ -30,6 +30,7 @@ dependencies {
 
     implementation("com.google.guava:guava:32.1.1-jre")
     implementation("org.bytedeco:llvm-platform:17.0.6-1.5.10")
+    implementation("org.jetbrains.kotlinx:kotlinx-cli:0.3.5")
 
     testImplementation("org.junit.jupiter:junit-jupiter-engine:5.9.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
