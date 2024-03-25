@@ -8,6 +8,7 @@ import iLangLexer
 import iLangParser
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
+import org.bytedeco.javacpp.Loader
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -34,10 +35,10 @@ object Compiler {
 
             LauncherCreator(programIr, launcherFilePath).createLauncher()
 
-            // TODO: replace with clang binding
-            Runtime.getRuntime().exec(
-                arrayOf("clang++", objectFilePath, launcherFilePath.toString(), "-o", outputFile)
-            ).waitFor()
+            val clang = Loader.load(org.bytedeco.llvm.program.clang::class.java)
+            val processBuilder = ProcessBuilder(clang,
+                objectFilePath, launcherFilePath.toString(), "-o", outputFile, "--driver-mode=g++")
+            processBuilder.inheritIO().start().waitFor()
         } finally {
             Files.deleteIfExists(Path.of(objectFilePath))
             Files.deleteIfExists(launcherFilePath)
