@@ -101,7 +101,7 @@ class CodeGenerator : Closeable {
         LLVMDisposeErrorMessage(errorBuffer)
     }
 
-    fun saveObjectFile(fileName: String) {
+    fun saveObjectFile(filePath: String) {
         val cpu = "generic"
         val cpuFeatures = ""
         val optimizationLevel = 0
@@ -110,7 +110,7 @@ class CodeGenerator : Closeable {
             LLVMRelocDefault, LLVMCodeModelDefault
         )
 
-        val outputFile = BytePointer(fileName)
+        val outputFile = BytePointer(filePath)
         if (LLVMTargetMachineEmitToFile(tm, module, outputFile, LLVMObjectFile, errorBuffer) != 0) {
             report("Failed to emit relocatable object file: " + errorBuffer.string)
         }
