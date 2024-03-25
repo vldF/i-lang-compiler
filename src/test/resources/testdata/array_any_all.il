@@ -1,3 +1,5 @@
+// main(): true
+
 routine not(b : bool) : bool is
     if b then return false else return true end
 end

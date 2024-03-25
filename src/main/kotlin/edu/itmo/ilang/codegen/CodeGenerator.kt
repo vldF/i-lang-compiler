@@ -19,7 +19,7 @@ class CodeGenerator : Closeable {
     private val target = LLVMTargetRef()
     private val errorBuffer = BytePointer()
 
-    private val primaryTypes = PrimaryTypes()
+    private val types = PrimaryTypes()
     private val constants = Constants()
 
     private var codegenContext = CodeGenContext()
@@ -29,18 +29,36 @@ class CodeGenerator : Closeable {
         val doubleType: LLVMTypeRef = LLVMDoubleTypeInContext(llvmContext)
         val boolType: LLVMTypeRef = LLVMInt1TypeInContext(llvmContext)
         val voidType: LLVMTypeRef = LLVMVoidTypeInContext(llvmContext)
+        val pointerType: LLVMTypeRef = LLVMPointerTypeInContext(llvmContext, /* AddressSpace = */ 0)
+        val arrayWrapperType: LLVMTypeRef = buildArrayWrapperType()
+
+        /**
+         * Array wrapper saves a pointer to array itself and its size
+         */
+        private fun buildArrayWrapperType(): LLVMTypeRef {
+            val elementTypes = PointerPointer<LLVMTypeRef>(2)
+            elementTypes.put(0, integerType)
+            elementTypes.put(1, pointerType)
+
+            return LLVMStructTypeInContext(
+                llvmContext,
+                elementTypes,
+                /* ElementCount = */ 2,
+                /* Packed = */ 0
+            )
+        }
     }
 
     inner class Constants {
-        val falseConst: LLVMValueRef = LLVMConstInt(primaryTypes.boolType, 0, /* SignExtend = */ 0)
-        val trueConst: LLVMValueRef = LLVMConstInt(primaryTypes.boolType, 1, /* SignExtend = */ 0)
+        val falseConst: LLVMValueRef = LLVMConstInt(types.boolType, 0, /* SignExtend = */ 0)
+        val trueConst: LLVMValueRef = LLVMConstInt(types.boolType, 1, /* SignExtend = */ 0)
 
-        val iZero: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 0, /* SignExtend = */ 0)
-        val iOne: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, 1, /* SignExtend = */ 0)
-        val iMinusOne: LLVMValueRef = LLVMConstInt(primaryTypes.integerType, -1, /* SignExtend = */ 0)
+        val iZero: LLVMValueRef = LLVMConstInt(types.integerType, 0, /* SignExtend = */ 0)
+        val iOne: LLVMValueRef = LLVMConstInt(types.integerType, 1, /* SignExtend = */ 0)
+        val iMinusOne: LLVMValueRef = LLVMConstInt(types.integerType, -1, /* SignExtend = */ 0)
 
-        val rZero: LLVMValueRef = LLVMConstReal(primaryTypes.doubleType, 0.0)
-        val rOne: LLVMValueRef = LLVMConstReal(primaryTypes.doubleType, 1.0)
+        val rZero: LLVMValueRef = LLVMConstReal(types.doubleType, 0.0)
+        val rOne: LLVMValueRef = LLVMConstReal(types.doubleType, 1.0)
     }
 
     fun generate(program: Program) {
@@ -230,24 +248,57 @@ class CodeGenerator : Closeable {
     }
 
     private fun createVariableInitializerValue(declaration: VariableDeclaration): LLVMValueRef? {
+        val type = declaration.type
         val initialExpression = declaration.initialExpression
 
         val initialValue = if (initialExpression == null || initialExpression == UninitializedLiteral) {
             null
         } else {
-            processExpression(initialExpression)
+            return processExpression(initialExpression)
         }
 
-        return when (val type = declaration.type) {
+        return when (type) {
             is ArrayType -> {
                 val elementType = type.contentType.llvmType
+                val sizeInElements = type.size!!.toLong()
                 val arraySizeInBytes = LLVMConstInt(
-                    primaryTypes.integerType,
-                    type.sizeof,
+                    types.integerType,
+                    sizeInElements,
                     /* SignExtend = */ 0)
 
-                return LLVMBuildArrayMalloc(builder, elementType, arraySizeInBytes, "array-initializer")
+                val wrapperAlloc = LLVMBuildAlloca(builder, types.arrayWrapperType, "array-wrapper-alloca")
+
+                val sizeValue = LLVMConstInt(types.integerType, sizeInElements, /* SignExtend = */ 0)
+                val sizePtr = LLVMBuildStructGEP2(
+                    builder,
+                    types.arrayWrapperType,
+                    wrapperAlloc,
+                    0,
+                    "get-size-ptr-in-wrapper"
+                )
+
+                LLVMBuildStore(builder, sizeValue, sizePtr)
+
+                val arrayMalloc = LLVMBuildArrayMalloc(builder, elementType, arraySizeInBytes, "array-initializer")
+                val arrayPtr = LLVMBuildStructGEP2(
+                    builder,
+                    types.arrayWrapperType,
+                    wrapperAlloc,
+                    1,
+                    "get-array-ptr-in-wrapper"
+                )
+
+                LLVMBuildStore(builder, arrayMalloc, arrayPtr)
+
+                LLVMBuildLoad2(builder, types.arrayWrapperType, wrapperAlloc, "load-wrapper")
             }
+
+            is RecordType -> {
+                val llvmType = type.llvmStructType
+
+                LLVMBuildMalloc(builder, llvmType, "structure-malloc")
+            }
+
             else -> {
                 initialValue
             }
@@ -257,8 +308,12 @@ class CodeGenerator : Closeable {
     private fun processReturn(statement: Return) {
         val expression = statement.expression
         if (expression != null) {
-            val value = processExpression(expression)
-            LLVMBuildRet(builder, value)
+            val res = when (expression.type) {
+                is RecordType -> getValueOrPointerIfUserType(expression)
+                else -> processExpression(expression)
+            }
+
+            LLVMBuildRet(builder, res)
         } else {
             LLVMBuildRetVoid(builder)
         }
@@ -275,14 +330,14 @@ class CodeGenerator : Closeable {
     private fun processExpression(expression: Expression): LLVMValueRef {
         return when (expression) {
             is IntegralLiteral -> {
-                LLVMConstInt(primaryTypes.integerType, expression.value.toLong(), /* SignExtend = */ 0)
+                LLVMConstInt(types.integerType, expression.value.toLong(), /* SignExtend = */ 0)
             }
             is BoolLiteral -> {
                 val intValue = if (expression.value) 1L else 0L
-                LLVMConstInt(primaryTypes.boolType, intValue, /* SignExtend = */ 0)
+                LLVMConstInt(types.boolType, intValue, /* SignExtend = */ 0)
             }
             is RealLiteral -> {
-                LLVMConstReal(primaryTypes.doubleType, expression.value)
+                LLVMConstReal(types.doubleType, expression.value)
             }
             is UnaryMinusExpression -> {
                 val nested = processExpression(expression.nestedExpression)
@@ -380,7 +435,7 @@ class CodeGenerator : Closeable {
                 )
             }
             is RoutineCall -> processRoutineCall(expression)
-            is UninitializedLiteral -> LLVMConstNull(primaryTypes.voidType)
+            is UninitializedLiteral -> LLVMConstNull(types.voidType)
         }
     }
 
@@ -404,6 +459,11 @@ class CodeGenerator : Closeable {
     private val FieldAccessExpression.getFieldIndex: Int
         get() {
             val field = this.field
+            if (this.accessedType is ArrayType && field == "size") {
+                // this is array.size syntax
+                return 0 // 0 is the size of the array in the array wrapper
+            }
+
             return (this.accessedType as RecordType).fields.indexOfFirst { it.first == field }
         }
 
@@ -438,14 +498,14 @@ class CodeGenerator : Closeable {
     }
 
     private fun getPointerToArrayElement(arrayAccess: ArrayAccessExpression): LLVMValueRef {
-        val arrType = arrayAccess.arrayType.llvmType
         val elemType = arrayAccess.arrayType.contentType.llvmType
 
-        val accessedExpression = processAccessExpressionAsLhs(arrayAccess.accessedExpression)
-        val loadArr = LLVMBuildLoad2(builder, arrType, accessedExpression, "load-arr")
+        val arrayWrapperPtrAlloca = processAccessExpressionAsLhs(arrayAccess.accessedExpression)
+        val arrayPtr = LLVMBuildStructGEP2(builder, types.arrayWrapperType, arrayWrapperPtrAlloca, 1, "array-ptr")
+        val loadArrayPtr = LLVMBuildLoad2(builder, types.pointerType, arrayPtr, "load-arr")
 
-        val idx = processExpression(arrayAccess.indexExpression ?: error("index must be not null!")) // todo
         // as far as our array indexes starts with 1, we need to subtract 1 from it
+        val idx = processExpression(arrayAccess.indexExpression!!)
         val idxPlusOne = LLVMBuildSub(builder, idx, constants.iOne, "array-index-correction")
         val idxPointerPointer = PointerPointer<LLVMValueRef>(/* size = */ 1)
         idxPointerPointer.put(0, idxPlusOne)
@@ -453,7 +513,7 @@ class CodeGenerator : Closeable {
         return LLVMBuildGEP2(
             builder,
             elemType,
-            loadArr,
+            loadArrayPtr,
             idxPointerPointer,
             1,
             "array-access"
@@ -461,10 +521,25 @@ class CodeGenerator : Closeable {
     }
 
     private fun getPointerToStructField(accessedExpression: AccessExpression, fieldIndex: Int): LLVMValueRef {
+        val structPtr = if (accessedExpression.type is ArrayType) {
+            // special case for .size syntax
+            processAccessExpressionAsLhs(accessedExpression)
+        } else {
+            val structPtrPtr = processAccessExpressionAsLhs(accessedExpression)
+            LLVMBuildLoad2(builder, accessedExpression.type.llvmType, structPtrPtr, "load-struct-ptr")
+        }
+
+        val accessedExpressionType = accessedExpression.type
+        val type = if (accessedExpressionType is RecordType) {
+            accessedExpressionType.llvmStructType
+        } else {
+            accessedExpressionType.llvmType
+        }
+
         return LLVMBuildStructGEP2(
             builder,
-            accessedExpression.type.llvmType,
-            processAccessExpressionAsLhs(accessedExpression),
+            type,
+            structPtr,
             fieldIndex,
             "get_field"
         )
@@ -479,13 +554,13 @@ class CodeGenerator : Closeable {
         var leftValue = processExpression(left)
         var rightValue = processExpression(right)
 
-        if (left.type is IntegerType) {
+        if (left.type is IntegerType || left.type is BoolType) {
             if (right.type is RealType) {
                 // right is real -> generalize left to real
                 leftValue = LLVMBuildSIToFP(
                     builder,
                     leftValue,
-                    primaryTypes.doubleType,
+                    types.doubleType,
                     "int-to-real"
                 )
 
@@ -499,7 +574,7 @@ class CodeGenerator : Closeable {
                 rightValue = LLVMBuildSIToFP(
                     builder,
                     rightValue,
-                    primaryTypes.doubleType,
+                    types.doubleType,
                     "int-to-real"
                 )
             }
@@ -525,18 +600,19 @@ class CodeGenerator : Closeable {
     private fun processRoutineCall(call: RoutineCall): LLVMValueRef {
         val routineSignature = call.routineDeclaration.signatureType
         val routineName = call.routineDeclaration.name
+        val routineReturnType = call.routineDeclaration.type.returnType
         val function = LLVMGetNamedFunction(module, routineName)
 
         val args = call.arguments.asCallArgValues
 
         // we should pass no instruction name if its return type is void
-        val callInstrName = if (call.routineDeclaration.type.returnType !is UnitType) {
+        val callInstrName = if (routineReturnType !is UnitType) {
             routineName + "_call"
         } else {
             ""
         }
 
-        return LLVMBuildCall2(
+        val resultValue = LLVMBuildCall2(
             builder,
             routineSignature,
             function,
@@ -544,6 +620,12 @@ class CodeGenerator : Closeable {
             call.arguments.size,
             callInstrName
         )
+
+        if (call.type is RecordType) {
+            return LLVMBuildLoad2(builder, types.pointerType, resultValue, "load-return-value")
+        }
+
+        return resultValue
     }
 
     private val List<Expression>.asCallArgValues: PointerPointer<LLVMValueRef>
@@ -555,7 +637,14 @@ class CodeGenerator : Closeable {
 
     private fun getValueOrPointerIfUserType(expression: Expression): LLVMValueRef {
         return when (expression) {
-            is AccessExpression -> processAccessExpressionAsLhs(expression)
+            is ArrayAccessExpression -> processAccessExpressionAsLhs(expression)
+            is VariableAccessExpression -> {
+                if (expression.type is UserType) {
+                    processAccessExpressionAsLhs(expression)
+                } else {
+                    processExpression(expression)
+                }
+            }
             else -> processExpression(expression)
         }
     }
@@ -594,7 +683,7 @@ class CodeGenerator : Closeable {
         LLVMPositionBuilderAtEnd(builder, entering)
 
         val loopVar = statement.loopVariableDecl
-        val iteratorAlloca = LLVMBuildAlloca(builder, primaryTypes.integerType, "loop-iter-var-alloca")
+        val iteratorAlloca = LLVMBuildAlloca(builder, types.integerType, "loop-iter-var-alloca")
         codegenContext.storeValueDecl(loopVar, iteratorAlloca)
 
         val isRangeReversed = !statement.isReversed
@@ -620,7 +709,7 @@ class CodeGenerator : Closeable {
         LLVMAppendExistingBasicBlock(function, latchBlock)
         LLVMPositionBuilderAtEnd(builder, latchBlock)
 
-        val iterValue = LLVMBuildLoad2(builder, primaryTypes.integerType, iteratorAlloca, "iter-load")
+        val iterValue = LLVMBuildLoad2(builder, types.integerType, iteratorAlloca, "iter-load")
         val newIterValue = LLVMBuildAdd(builder, iterValue, step, "iter-inc")
         LLVMBuildStore(builder, newIterValue, iteratorAlloca)
 
@@ -630,12 +719,12 @@ class CodeGenerator : Closeable {
 
         LLVMPositionBuilderAtEnd(builder, entryBlock)
 
-        val iterLoad = LLVMBuildLoad2(builder, primaryTypes.integerType, iteratorAlloca, "iter-load")
+        val iterLoad = LLVMBuildLoad2(builder, types.integerType, iteratorAlloca, "iter-load")
 
         val condition = if (statement.isReversed) {
-            LLVMBuildICmp(builder, LLVMIntSGE, iterLoad, stopValue, "cmp-forward")
+            LLVMBuildICmp(builder, LLVMIntSGE, iterLoad, stopValue, "cmp-reverse")
         } else {
-            LLVMBuildICmp(builder, LLVMIntSLE, iterLoad, stopValue, "cmp-reverse")
+            LLVMBuildICmp(builder, LLVMIntSLE, iterLoad, stopValue, "cmp-forward")
         }
 
         LLVMBuildCondBr(builder, condition, loopBodyBlock, exitBlock)
@@ -718,14 +807,17 @@ class CodeGenerator : Closeable {
 
     private val Type.llvmType: LLVMTypeRef
         get() = when(this) {
-            is IntegerType -> primaryTypes.integerType
-            is RealType -> primaryTypes.doubleType
-            is BoolType -> primaryTypes.boolType
-            UnitType -> primaryTypes.voidType
-            is ArrayType -> LLVMPointerTypeInContext(llvmContext, 0)
-            is RecordType -> LLVMStructTypeInContext(llvmContext, this.elementTypes, this.fields.size, /* Packed = */ 0)
+            is IntegerType -> types.integerType
+            is RealType -> types.doubleType
+            is BoolType -> types.boolType
+            is UnitType -> types.voidType
+            is ArrayType -> types.arrayWrapperType
+            is RecordType -> types.pointerType
             else -> report("unsupported type $this")
         }
+
+    private val RecordType.llvmStructType: LLVMTypeRef
+        get() = LLVMStructTypeInContext(llvmContext, this.elementTypes, this.fields.size, /* Packed = */ 0)
 
     private val RecordType.elementTypes: PointerPointer<LLVMTypeRef>
         get() {

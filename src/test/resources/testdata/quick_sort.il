@@ -1,3 +1,5 @@
+// main(): true
+
 routine quickSort(arr : array[] integer, low : integer, high : integer) is
     if (arr.size = 0 or low >= high) then
         return
@@ -15,7 +17,7 @@ routine quickSort(arr : array[] integer, low : integer, high : integer) is
             i := i + 1
         end
 
-        while arr[i] > midElement loop
+        while arr[j] > midElement loop
             j := j - 1
         end
 
@@ -58,7 +60,7 @@ routine main() : bool is
     arr[3] := 3
     arr[4] := 0
     arr[5] := 1
-    quickSort(arr)
+    quickSort(arr, 1, arr.size)
 
     return isSorted(arr)
 end

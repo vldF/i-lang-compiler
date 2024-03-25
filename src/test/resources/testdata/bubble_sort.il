@@ -1,3 +1,5 @@
+// main(): true
+
 routine bubbleSort(arr : array[] integer) is
     var current is arr[1]
     var temp : integer

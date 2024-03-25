@@ -1,3 +1,5 @@
+// main(): 3.0
+
 routine avg(arr : array[] integer) : real is
     var sum : integer is 0
 
@@ -5,7 +7,7 @@ routine avg(arr : array[] integer) : real is
         sum := sum + arr[i]
     end
 
-    return sum / arr.size
+    return sum * 1.0 / arr.size
 end
 
 routine main() : real is

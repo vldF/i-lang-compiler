@@ -76,7 +76,7 @@ object CodeGenTestsRunner : ParseAwareTestRunner() {
         val argValues = args.split(",").map { it.asValue }
         val argsNotNull = argValues.filterNotNull()
 
-        if (argValues != argsNotNull) {
+        if (args.isNotBlank() && argValues != argsNotNull) {
             return null
         }
 

@@ -32,6 +32,11 @@ class iLangCodeGenTests {
     }
     
     @Test
+    fun array_size_test() {
+        CodeGenTestsRunner.run("array_size")
+    }
+    
+    @Test
     fun arrays_test() {
         CodeGenTestsRunner.run("arrays")
     }
@@ -119,6 +124,11 @@ class iLangCodeGenTests {
     @Test
     fun records_test() {
         CodeGenTestsRunner.run("records")
+    }
+    
+    @Test
+    fun return_array_test() {
+        CodeGenTestsRunner.run("return_array")
     }
     
     @Test

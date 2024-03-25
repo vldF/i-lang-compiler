@@ -1,3 +1,5 @@
+// main(): 6
+
 routine min(arr : array[] integer) : integer is
     var current is arr[1]
 

@@ -1,3 +1,5 @@
+// main(): 6
+
 routine firstIndex(elem : integer, arr : array[] integer) : integer is
     for i in 1..(arr.size) loop
         if arr[i] = elem then
@@ -26,5 +28,5 @@ routine main() : integer is
     arr[4] := 3
     arr[5] := 1
 
-    return firstIndex(arr, 2) + lastIndex(arr, 3)
+    return firstIndex(2, arr) + lastIndex(3, arr)
 end
