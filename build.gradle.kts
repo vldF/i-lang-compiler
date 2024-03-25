@@ -72,7 +72,7 @@ tasks.test {
     jvmArgs("--enable-native-access=ALL-UNNAMED")
 
     if (project.hasProperty("excludeTests")) {
-        exclude(project.property("excludeTests").toString())
+        exclude(project.property("excludeTests").toString().split(","))
     }
 
     testLogging {
