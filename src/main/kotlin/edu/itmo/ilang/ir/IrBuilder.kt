@@ -1,7 +1,7 @@
-package edu.itmo.ilang
+package edu.itmo.ilang.ir
 
-import edu.itmo.ilang.ir.*
-import edu.itmo.ilang.ir.Nothing
+import edu.itmo.ilang.ir.model.Nothing
+import edu.itmo.ilang.ir.model.*
 import edu.itmo.ilang.util.report
 import iLangParser.*
 import iLangParserBaseVisitor

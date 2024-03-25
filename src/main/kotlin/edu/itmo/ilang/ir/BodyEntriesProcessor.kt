@@ -1,5 +1,7 @@
 package edu.itmo.ilang.ir
 
+import edu.itmo.ilang.ir.model.*
+
 interface BodyEntriesProcessor {
 
     fun processBodyEntry(bodyEntry: BodyEntry)

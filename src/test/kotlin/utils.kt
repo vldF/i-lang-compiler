@@ -1,6 +1,5 @@
-import edu.itmo.ilang.IrBuilder
-import edu.itmo.ilang.ir.IrEntry
-import edu.itmo.ilang.ir.Program
+import edu.itmo.ilang.ir.IrBuilder
+import edu.itmo.ilang.ir.model.Program
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 

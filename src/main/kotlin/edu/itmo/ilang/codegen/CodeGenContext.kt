@@ -1,6 +1,6 @@
 package edu.itmo.ilang.codegen
 
-import edu.itmo.ilang.ir.ValueDeclaration
+import edu.itmo.ilang.ir.model.ValueDeclaration
 import edu.itmo.ilang.util.report
 import org.bytedeco.llvm.LLVM.LLVMBasicBlockRef
 import org.bytedeco.llvm.LLVM.LLVMValueRef

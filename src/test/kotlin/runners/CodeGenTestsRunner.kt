@@ -1,6 +1,6 @@
 package runners
 
-import edu.itmo.ilang.IrBuilder
+import edu.itmo.ilang.ir.IrBuilder
 import edu.itmo.ilang.codegen.CodeGenerator
 import edu.itmo.ilang.semantic.SemanticStageProcessor
 import utils.LLVMInterpreter

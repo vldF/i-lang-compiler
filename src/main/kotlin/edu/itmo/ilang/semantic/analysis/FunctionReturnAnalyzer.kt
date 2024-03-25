@@ -1,6 +1,7 @@
 package edu.itmo.ilang.semantic.analysis
 
 import edu.itmo.ilang.ir.*
+import edu.itmo.ilang.ir.model.*
 
 class FunctionReturnAnalyzer : Analyser {
     override fun analyse(program: Program) {

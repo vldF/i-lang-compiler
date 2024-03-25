@@ -1,6 +1,6 @@
-package edu.itmo.ilang
+package edu.itmo.ilang.ir
 
-import edu.itmo.ilang.ir.*
+import edu.itmo.ilang.ir.model.*
 import edu.itmo.ilang.util.report
 
 object CompileTimeEvaluator {

@@ -1,6 +1,7 @@
 package edu.itmo.ilang.semantic.transformations
 
 import edu.itmo.ilang.ir.*
+import edu.itmo.ilang.ir.model.*
 
 class DeadCodeEliminator : Transformer {
     override fun transform(program: Program) {

@@ -1,7 +1,7 @@
 package edu.itmo.ilang.util
 
-import edu.itmo.ilang.IrBuilder
-import edu.itmo.ilang.ir.IrEntry
+import edu.itmo.ilang.ir.IrBuilder
+import edu.itmo.ilang.ir.model.IrEntry
 import iLangLexer
 import iLangParser
 import org.antlr.v4.runtime.ANTLRInputStream

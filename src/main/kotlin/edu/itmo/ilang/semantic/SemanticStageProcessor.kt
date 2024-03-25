@@ -1,6 +1,6 @@
 package edu.itmo.ilang.semantic
 
-import edu.itmo.ilang.ir.Program
+import edu.itmo.ilang.ir.model.Program
 import edu.itmo.ilang.semantic.analysis.FunctionReturnAnalyzer
 import edu.itmo.ilang.semantic.checkers.AssignNewValueToArgument
 import edu.itmo.ilang.semantic.checkers.BreakAndContinueInsideCyclesChecker

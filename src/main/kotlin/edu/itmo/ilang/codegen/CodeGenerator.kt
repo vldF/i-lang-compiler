@@ -1,6 +1,6 @@
 package edu.itmo.ilang.codegen
 
-import edu.itmo.ilang.ir.*
+import edu.itmo.ilang.ir.model.*
 import edu.itmo.ilang.util.iCheck
 import edu.itmo.ilang.util.report
 import org.bytedeco.javacpp.BytePointer
