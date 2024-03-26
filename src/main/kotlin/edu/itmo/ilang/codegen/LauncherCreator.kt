@@ -1,7 +1,6 @@
 package edu.itmo.ilang.codegen
 
 import edu.itmo.ilang.ir.model.*
-import edu.itmo.ilang.ir.model.VariableDeclaration.Companion.MAIN_ROUTINE_SYNTHETIC_NAME
 import java.nio.file.Path
 import kotlin.io.path.createFile
 import kotlin.io.path.writeText
@@ -35,14 +34,13 @@ class LauncherCreator(programIr: Program, private val launcherPath: Path) {
                 return 0;
             }
             
-            const char * name = argv[1];
-            if (strcmp(name, "main") == 0) {
-                name = "$MAIN_ROUTINE_SYNTHETIC_NAME";
-            }
+            const char * original_name = argv[1];
+            char name[256] = "$";
+            std::strcat(name, original_name);
                 
             ${getFunctionsInvokeBranches()}
             
-            std::cout << name << " function is not declared" << std::endl;
+            std::cout << original_name << " function is not declared" << std::endl;
         }
         """.trimIndent()
     }

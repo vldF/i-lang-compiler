@@ -2,8 +2,8 @@ package edu.itmo.ilang.ir
 
 import edu.itmo.ilang.ir.model.Nothing
 import edu.itmo.ilang.ir.model.*
-import edu.itmo.ilang.ir.model.VariableDeclaration.Companion.MAIN_ROUTINE_SYNTHETIC_NAME
 import edu.itmo.ilang.util.report
+import edu.itmo.ilang.util.toInternalRoutineName
 import iLangParser.*
 import iLangParserBaseVisitor
 import org.antlr.v4.runtime.tree.TerminalNode
@@ -96,10 +96,7 @@ class IrBuilder : iLangParserBaseVisitor<IrEntry>() {
     }
 
     override fun visitRoutineDeclaration(ctx: RoutineDeclarationContext): RoutineDeclaration {
-        var name = ctx.Identifier().text
-        if (name == "main") {
-            name = MAIN_ROUTINE_SYNTHETIC_NAME
-        }
+        val name = ctx.Identifier().text.toInternalRoutineName()
         val returnType = ctx.type()?.let { visitType(it) } ?: UnitType
 
         return symbolTable.withScope {
@@ -195,10 +192,7 @@ class IrBuilder : iLangParserBaseVisitor<IrEntry>() {
     }
 
     private fun visitRoutineCall(routineName: String, args: List<ExpressionContext>?): RoutineCall {
-        var name = routineName
-        if (name == "main") {
-            name = MAIN_ROUTINE_SYNTHETIC_NAME
-        }
+        val name = routineName.toInternalRoutineName()
         val declaration = symbolTable.lookup<RoutineDeclaration>(name)?.declaration
             ?: report("unknown symbol $routineName")
         val expressions = args?.map { visitExpression(it) } ?: emptyList()
