@@ -25,7 +25,7 @@ object Compiler {
 
         val outputFilePath = Path.of(outputFile).toAbsolutePath().normalize()
         val objectFilePath = "$outputFilePath.o"
-        val launcherFilePath = Path.of(outputFilePath.parent.toString(), "launcher.cpp")
+        val launcherFilePath = outputFilePath.parent.resolve("launcher.cpp")
 
         try {
             CodeGenerator().use { codeGenerator ->

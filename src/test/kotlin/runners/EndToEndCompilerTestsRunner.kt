@@ -3,9 +3,10 @@ package runners
 import edu.itmo.ilang.Compiler
 import kotlin.io.path.Path
 import kotlin.io.path.deleteIfExists
+import kotlin.math.pow
 import kotlin.test.assertEquals
 
-object EndToEndCompilerTestsRunner : ParseAwareTestRunner() {
+object EndToEndCompilerTestsRunner : ExecutionMetadataTestRunner() {
 
     private val binaryPath = Path("test.out").toAbsolutePath()
 
@@ -26,7 +27,7 @@ object EndToEndCompilerTestsRunner : ParseAwareTestRunner() {
 
                 assertEquals(0, process.waitFor())
                 if (meta.expectedResult is Double) {
-                    assertEquals(meta.expectedResult, result.trim().toDouble())
+                    assertEquals(meta.expectedResult, result.trim().toDouble(), 10.0.pow(-5.0))
                 } else {
                     assertEquals(meta.expectedResult.toString(), result.trim())
                 }

@@ -7,7 +7,7 @@ import utils.LLVMInterpreter
 import kotlin.math.pow
 import kotlin.test.assertEquals
 
-object CodeGenTestsRunner : ParseAwareTestRunner() {
+object CodeGenTestsRunner : ExecutionMetadataTestRunner() {
     override fun run(testName: String) {
         val parser = parse(testName)
         val programIr = IrBuilder().visitProgram(parser.program())
