@@ -1,8 +1,8 @@
 package edu.itmo.ilang.semantic.checkers
 
-import edu.itmo.ilang.ir.BodyEntry
-import edu.itmo.ilang.ir.ForLoop
-import edu.itmo.ilang.ir.IntegerType
+import edu.itmo.ilang.ir.model.BodyEntry
+import edu.itmo.ilang.ir.model.ForLoop
+import edu.itmo.ilang.ir.model.IntegerType
 import edu.itmo.ilang.util.report
 
 class ForRangeIsInteger : BodyEntriesChecker {

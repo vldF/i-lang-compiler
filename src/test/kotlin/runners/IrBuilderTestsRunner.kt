@@ -1,6 +1,6 @@
 package runners
 
-import edu.itmo.ilang.IrBuilder
+import edu.itmo.ilang.ir.IrBuilder
 import org.junit.jupiter.api.assertDoesNotThrow
 
 object IrBuilderTestsRunner : ParseAwareTestRunner() {

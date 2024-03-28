@@ -1,4 +1,4 @@
-package edu.itmo.ilang.ir
+package edu.itmo.ilang.ir.model
 
 sealed interface Declaration : IrEntry {
     val name: String

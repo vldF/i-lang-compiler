@@ -1,5 +1,8 @@
 package edu.itmo.ilang.ir
 
+import edu.itmo.ilang.ir.model.*
+import edu.itmo.ilang.ir.model.Nothing
+
 interface IrProcessor<T> {
     fun process(entry: IrEntry): T {
         return when(entry) {

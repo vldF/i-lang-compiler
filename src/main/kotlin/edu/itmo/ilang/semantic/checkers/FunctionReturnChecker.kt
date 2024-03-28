@@ -1,8 +1,8 @@
 package edu.itmo.ilang.semantic.checkers
 
-import edu.itmo.ilang.ir.Program
-import edu.itmo.ilang.ir.RoutineDeclaration
-import edu.itmo.ilang.ir.UnitType
+import edu.itmo.ilang.ir.model.Program
+import edu.itmo.ilang.ir.model.RoutineDeclaration
+import edu.itmo.ilang.ir.model.UnitType
 import edu.itmo.ilang.util.report
 
 class FunctionReturnChecker : Checker {

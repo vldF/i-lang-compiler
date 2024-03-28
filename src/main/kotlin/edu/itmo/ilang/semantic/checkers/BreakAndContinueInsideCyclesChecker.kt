@@ -1,6 +1,6 @@
 package edu.itmo.ilang.semantic.checkers
 
-import edu.itmo.ilang.ir.*
+import edu.itmo.ilang.ir.model.*
 import edu.itmo.ilang.util.report
 
 class BreakAndContinueInsideCyclesChecker : Checker {

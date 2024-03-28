@@ -1,7 +1,4 @@
-import runners.CodeGenTestsRunner
-import runners.ITestRunner
-import runners.IrBuilderTestsRunner
-import runners.ParserTestsRunner
+import runners.*
 import java.io.File
 import kotlin.reflect.KClass
 
@@ -18,6 +15,7 @@ fun main() {
     generateParserTests(testCases)
     generateIrBuilderTests(testCases)
     generateCodegenTests(testCases)
+    generateEndToEndCompilerTests(testCases)
 }
 
 private fun generateParserTests(testCases: Array<File>) {
@@ -30,6 +28,10 @@ private fun generateIrBuilderTests(testCases: Array<File>) {
 
 private fun generateCodegenTests(testCases: Array<File>) {
     generateTests(testCases, "iLangCodeGenTests", CodeGenTestsRunner::class)
+}
+
+private fun generateEndToEndCompilerTests(testCases: Array<File>) {
+    generateTests(testCases, "iLangEndToEndCompilerTests", EndToEndCompilerTestsRunner::class)
 }
 
 private fun generateTests(testCases: Array<File>, testClassName: String, testRunner: KClass<out ITestRunner>) {

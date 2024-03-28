@@ -1,7 +1,7 @@
-package edu.itmo.ilang
+package edu.itmo.ilang.ir
 
-import edu.itmo.ilang.ir.Declaration
-import edu.itmo.ilang.ir.Type
+import edu.itmo.ilang.ir.model.Declaration
+import edu.itmo.ilang.ir.model.Type
 import edu.itmo.ilang.util.report
 
 data class SymbolInfo(

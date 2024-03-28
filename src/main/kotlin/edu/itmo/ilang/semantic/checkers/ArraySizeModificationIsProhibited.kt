@@ -1,6 +1,6 @@
 package edu.itmo.ilang.semantic.checkers
 
-import edu.itmo.ilang.ir.Program
+import edu.itmo.ilang.ir.model.Program
 
 /**
  * todo: deny array size setting like this:
