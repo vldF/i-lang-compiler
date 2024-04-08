@@ -13,7 +13,7 @@ class SemanticStageProcessor {
     private val checkers = listOf(
 //        TypeChecker(), todo: enable when it will be implemented
         ArraySizeModificationIsProhibited(),
-//        IdentifierChecker(), todo: enable when it will be implemented
+        IdentifierChecker(),
         FunctionReturnChecker(),
         BreakAndContinueInsideCyclesChecker(),
         AssignNewValueToArgument(),
