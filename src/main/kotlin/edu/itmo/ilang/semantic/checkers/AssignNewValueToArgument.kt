@@ -12,7 +12,6 @@ class AssignNewValueToArgument : BodyEntriesChecker {
             bodyEntry.lhs is VariableAccessExpression &&
             bodyEntry.lhs.variable is ParameterDeclaration
         ) {
-
             report("cannot assign to parameters")
         }
     }
