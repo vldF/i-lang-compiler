@@ -1,10 +1,10 @@
 package edu.itmo.ilang.semantic.checkers
 
-import edu.itmo.ilang.ir.model.Program
+import edu.itmo.ilang.ir.model.*
+import edu.itmo.ilang.util.report
 
 /**
- * todo: deny array size setting like this:
- * In current implementation the next code is valid:
+ * Deny array size setting like this:
  *
  * routine test() : integer is
  *   var arr1 : array[1] integer
@@ -13,8 +13,14 @@ import edu.itmo.ilang.ir.model.Program
  *   return arr1.size // 10
  * end
  */
-class ArraySizeModificationIsProhibited : Checker {
-    override fun check(program: Program) {
-        TODO("Not yet implemented")
+class ArraySizeModificationIsProhibited : BodyEntriesChecker {
+    override fun processBodyEntry(bodyEntry: BodyEntry) {
+        if (bodyEntry is Assignment &&
+            bodyEntry.lhs is FieldAccessExpression &&
+            bodyEntry.lhs.accessedExpression.type is ArrayType &&
+            bodyEntry.lhs.field == "size"
+        ) {
+            report("cannot assign to array size field")
+        }
     }
 }
