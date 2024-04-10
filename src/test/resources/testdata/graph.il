@@ -36,7 +36,7 @@ routine findNodeByKey(root : TreeNode, key : integer) : MayBeNode is
     return nothingNode
 end
 
-routine main() : integer is
+routine main() : real is
     var root : TreeNode
     root.key := 0
     root.value := 0.0
