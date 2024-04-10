@@ -76,7 +76,7 @@ routineCallStatement
    ;
 
 routineCallExpression
-   : Identifier L_PARENTHESIS expression ( COMMA expression )* R_PARENTHESIS
+   : Identifier L_PARENTHESIS (expression ( COMMA expression )*) ? R_PARENTHESIS
    ;
 
 whileLoop
