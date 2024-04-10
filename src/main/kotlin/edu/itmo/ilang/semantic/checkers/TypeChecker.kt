@@ -54,17 +54,9 @@ class TypeChecker : Checker, IrProcessor<Unit> {
         this.currentRoutineReturnExpressions.add(`return`)
     }
 
-    override fun processRoutineCall(routineCall: RoutineCall) {
-        visitExpression(routineCall)
-    }
-
     override fun processWhileLoop(whileLoop: WhileLoop) {
         visitExpression(whileLoop.condition, BoolType)
         process(whileLoop.body)
-    }
-
-    override fun processTypeDeclaration(typeDeclaration: TypeDeclaration) {
-        process(typeDeclaration.type)
     }
 
     override fun processVariableDeclaration(variableDeclaration: VariableDeclaration) {
@@ -100,90 +92,6 @@ class TypeChecker : Checker, IrProcessor<Unit> {
             visitExpression(returnExpr.expression, returnExpr.expression.type)
         }
         currentRoutineReturnExpressions.clear()
-    }
-
-    override fun processAndExpression(andExpression: AndExpression) {
-        visitExpression(andExpression)
-    }
-
-    override fun processDivExpression(divExpression: DivExpression) {
-        visitExpression(divExpression)
-    }
-
-    override fun processEqualsExpression(equalsExpression: EqualsExpression) {
-        visitExpression(equalsExpression)
-    }
-
-    override fun processGreaterExpression(greaterExpression: GreaterExpression) {
-        visitExpression(greaterExpression)
-    }
-
-    override fun processGreaterOrEqualsExpression(greaterOrEqualsExpression: GreaterOrEqualsExpression) {
-        visitExpression(greaterOrEqualsExpression)
-    }
-
-    override fun processLessExpression(lessExpression: LessExpression) {
-        visitExpression(lessExpression)
-    }
-
-    override fun processLessOrEqualsExpression(lessOrEqualsExpression: LessOrEqualsExpression) {
-        visitExpression(lessOrEqualsExpression)
-    }
-
-    override fun processMinusExpression(minusExpression: MinusExpression) {
-        visitExpression(minusExpression)
-    }
-
-    override fun processModExpression(modExpression: ModExpression) {
-        visitExpression(modExpression)
-    }
-
-    override fun processMulExpression(mulExpression: MulExpression) {
-        visitExpression(mulExpression)
-    }
-
-    override fun processNotEqualsExpression(notEqualsExpression: NotEqualsExpression) {
-        visitExpression(notEqualsExpression)
-    }
-
-    override fun processOrExpression(orExpression: OrExpression) {
-        visitExpression(orExpression)
-    }
-
-    override fun processPlusExpression(plusExpression: PlusExpression) {
-        visitExpression(plusExpression)
-    }
-
-    override fun processXorExpression(xorExpression: XorExpression) {
-        visitExpression(xorExpression)
-    }
-
-    override fun processBoolLiteral(boolLiteral: BoolLiteral) {
-        visitExpression(boolLiteral)
-    }
-
-    override fun processIntegralLiteral(integralLiteral: IntegralLiteral) {
-        visitExpression(integralLiteral)
-    }
-
-    override fun processRealLiteral(realLiteral: RealLiteral) {
-        visitExpression(realLiteral)
-    }
-
-    override fun processUninitializedLiteral(uninitializedLiteral: UninitializedLiteral) {
-        visitExpression(uninitializedLiteral)
-    }
-
-    override fun processArrayAccessExpression(arrayAccessExpression: ArrayAccessExpression) {
-        visitExpression(arrayAccessExpression)
-    }
-
-    override fun processFieldAccessExpression(fieldAccessExpression: FieldAccessExpression) {
-        visitExpression(fieldAccessExpression)
-    }
-
-    override fun processUnaryMinusExpression(unaryMinusExpression: UnaryMinusExpression) {
-        visitExpression(unaryMinusExpression)
     }
 
     private fun visitExpression(expr: Expression, expectedType: Type? = null, errPredicate: String? = null): Type {
@@ -290,6 +198,54 @@ class TypeChecker : Checker, IrProcessor<Unit> {
         return expr.arrayType.contentType
     }
 
+    override fun processRoutineCall(routineCall: RoutineCall) {}
+
+    override fun processTypeDeclaration(typeDeclaration: TypeDeclaration) {}
+
+    override fun processAndExpression(andExpression: AndExpression) {}
+
+    override fun processDivExpression(divExpression: DivExpression) {}
+
+    override fun processEqualsExpression(equalsExpression: EqualsExpression) {}
+
+    override fun processGreaterExpression(greaterExpression: GreaterExpression) {}
+
+    override fun processGreaterOrEqualsExpression(greaterOrEqualsExpression: GreaterOrEqualsExpression) {}
+
+    override fun processLessExpression(lessExpression: LessExpression) {}
+
+    override fun processLessOrEqualsExpression(lessOrEqualsExpression: LessOrEqualsExpression) {}
+
+    override fun processMinusExpression(minusExpression: MinusExpression) {}
+
+    override fun processModExpression(modExpression: ModExpression) {}
+
+    override fun processMulExpression(mulExpression: MulExpression) {}
+
+    override fun processNotEqualsExpression(notEqualsExpression: NotEqualsExpression) {}
+
+    override fun processOrExpression(orExpression: OrExpression) {}
+
+    override fun processPlusExpression(plusExpression: PlusExpression) {}
+
+    override fun processXorExpression(xorExpression: XorExpression) {}
+
+    override fun processBoolLiteral(boolLiteral: BoolLiteral) {}
+
+    override fun processIntegralLiteral(integralLiteral: IntegralLiteral) {}
+
+    override fun processRealLiteral(realLiteral: RealLiteral) {}
+
+    override fun processUninitializedLiteral(uninitializedLiteral: UninitializedLiteral) {}
+
+    override fun processArrayAccessExpression(arrayAccessExpression: ArrayAccessExpression) {}
+
+    override fun processFieldAccessExpression(fieldAccessExpression: FieldAccessExpression) {}
+
+    override fun processUnaryMinusExpression(unaryMinusExpression: UnaryMinusExpression) {}
+
+    override fun processVariableAccess(variableAccess: VariableAccessExpression) {}
+
     override fun processParameterDeclaration(parameterDeclaration: ParameterDeclaration) {}
 
     override fun processBreak(`break`: Break) {}
@@ -313,6 +269,4 @@ class TypeChecker : Checker, IrProcessor<Unit> {
     override fun processArrayType(arrayType: ArrayType) {}
 
     override fun processRecordType(recordType: RecordType) {}
-
-    override fun processVariableAccess(variableAccess: VariableAccessExpression) {}
 }
