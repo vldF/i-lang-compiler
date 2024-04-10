@@ -73,6 +73,10 @@ data class RecordType(
     override fun hashCode(): Int {
         return identifier.hashCode()
     }
+
+    override fun toString(): String {
+        return "RecordType($identifier)"
+    }
 }
 
 data class RoutineType(
