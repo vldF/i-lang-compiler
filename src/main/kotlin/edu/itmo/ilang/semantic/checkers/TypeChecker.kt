@@ -6,7 +6,7 @@ import edu.itmo.ilang.ir.model.Nothing
 import edu.itmo.ilang.util.report
 
 class TypeChecker : Checker, IrProcessor<Unit> {
-    private val currentRoutineReturnExpressions: MutableList<Return> = mutableListOf()
+    private val currentRoutineReturnExpressions = mutableListOf<Return>()
 
     override fun check(program: Program) {
         process(program)
@@ -26,7 +26,16 @@ class TypeChecker : Checker, IrProcessor<Unit> {
             return
         }
 
-        if (assignment.lhs.type == RealType && assignment.rhs.type == IntegerType) {
+        // Check assign declaration: https://cs-uni.ru/images/f/f8/Project_I.pdf
+        if (assignment.lhs.type == IntegerType && assignment.rhs.isOneOf(RealType, BoolType) ||
+            assignment.lhs.type == RealType && assignment.rhs.isOneOf(IntegerType, BoolType)
+        ) {
+            return
+        }
+
+        // I don't check if num is 1 or 0
+        // It must check not TypeChecker cause expression could be evaluated in runtime
+        if (assignment.lhs.type == BoolType && assignment.rhs.isOneOf(IntegerType, RealType)) {
             return
         }
 
@@ -51,7 +60,7 @@ class TypeChecker : Checker, IrProcessor<Unit> {
     }
 
     override fun processReturn(`return`: Return) {
-        this.currentRoutineReturnExpressions.add(`return`)
+        currentRoutineReturnExpressions.add(`return`)
     }
 
     override fun processWhileLoop(whileLoop: WhileLoop) {
@@ -117,10 +126,6 @@ class TypeChecker : Checker, IrProcessor<Unit> {
             return actualType
         }
 
-        if (expectedType == RealType && actualType == IntegerType) {
-            return expectedType
-        }
-
         report("${errPredicate ?: ""}Expected type $expectedType but got $actualType")
     }
 
@@ -145,11 +150,7 @@ class TypeChecker : Checker, IrProcessor<Unit> {
 
         // >, >=, <, <=,
         if (leftType != rightType) {
-            val validBinaryCast =
-                leftType == IntegerType && rightType == RealType || leftType == RealType && rightType == IntegerType
-            if (!validBinaryCast) {
-                report("Can't evaluate expression ${expr.type} with types $leftType, $rightType")
-            }
+            report("Can't evaluate expression ${expr.type} with types $leftType, $rightType")
         }
 
         return BoolType
@@ -196,6 +197,15 @@ class TypeChecker : Checker, IrProcessor<Unit> {
         }
         visitExpression(expr.accessedExpression, expr.arrayType)
         return expr.arrayType.contentType
+    }
+
+    private fun Expression.isOneOf(vararg types: Type): Boolean {
+        for (type in types) {
+            if (this.type == type) {
+                return true
+            }
+        }
+        return false
     }
 
     override fun processRoutineCall(routineCall: RoutineCall) {}

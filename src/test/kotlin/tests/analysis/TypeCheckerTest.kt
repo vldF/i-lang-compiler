@@ -25,17 +25,104 @@ class TypeCheckerTest {
     }
 
     @Test
-    fun testAssignWrongType() {
+    fun testAssignIntegerBoolValid() {
         val example = """
         routine test() : integer is
           var num1 : integer
-          num1 := false
+          num1 := false // num is 0
         
           return 0
         end
         """.trimIndent()
 
-        assertFailWith<ILangGeneralException>("fatal error: Can't assign expression with type BoolType to left side with type IntegerType") {
+        assertDoesNotThrow {
+            val ir = generateIr(example)
+            TypeChecker().check(ir)
+        }
+    }
+
+    @Test
+    fun testAssignIntegerRealValid() {
+        val example = """
+        routine test() : integer is
+          var num1 : integer
+          num1 := 32.34343434 // num is 32
+        
+          return 0
+        end
+        """.trimIndent()
+
+        assertDoesNotThrow {
+            val ir = generateIr(example)
+            TypeChecker().check(ir)
+        }
+    }
+
+    @Test
+    fun testAssignRealBoolValid() {
+        val example = """
+        routine test() : integer is
+          var num1 : real
+          num1 := true // 1.0
+        
+          return 0
+        end
+        """.trimIndent()
+
+        assertDoesNotThrow {
+            val ir = generateIr(example)
+            TypeChecker().check(ir)
+        }
+    }
+
+    @Test
+    fun testAssignRealIntegerValid() {
+        val example = """
+        routine test() : integer is
+          var num1 : real
+          num1 := 123 // 123.0
+        
+          return 0
+        end
+        """.trimIndent()
+
+        assertDoesNotThrow {
+            val ir = generateIr(example)
+            TypeChecker().check(ir)
+        }
+    }
+
+    @Test
+    fun testAssignBoolIntegerValid() {
+        val example = """
+        routine test() : integer is
+          var some : bool
+          some := 1 // true
+          some := 0 // false
+        
+          return 0
+        end
+        """.trimIndent()
+
+        assertDoesNotThrow {
+            val ir = generateIr(example)
+            TypeChecker().check(ir)
+        }
+    }
+
+    @Test
+    fun testAssignBoolRealValid() {
+        val example = """
+        routine test() : integer is
+          var some : bool
+          some := 1.0 // true
+          some := 0.0 // false
+        
+          return 0
+        end
+        """.trimIndent()
+
+        assertDoesNotThrow {
             val ir = generateIr(example)
             TypeChecker().check(ir)
         }
@@ -88,12 +175,12 @@ class TypeCheckerTest {
     }
 
     @Test
-    fun testIntegerTypeCanBeAssignedToReal() {
+    fun testIntegerAndRealOperationReturnRealType() {
         val example = """
         routine test(a : integer) : real is
           var num1 : integer is 10
         
-          return a + num1
+          return 10.0 + num1
         end
         """.trimIndent()
 
@@ -245,13 +332,14 @@ class TypeCheckerTest {
         val example = """        
        routine arrays(i: integer, n: integer): integer is
            var arr : array [10] integer
-           arr[n] := true
+           var arr2 : array [1] integer
+           arr[1] := arr2
 
            return arr[n]
        end
         """.trimIndent()
 
-        assertFailWith<ILangGeneralException>("fatal error: Can't assign expression with type BoolType to left side with type IntegerType") {
+        assertFailWith<ILangGeneralException>("fatal error: Can't assign expression with type ArrayType(identifier=null, contentType=IntegerType) to left side with type IntegerType") {
             val ir = generateIr(example)
             TypeChecker().check(ir)
         }
@@ -271,33 +359,6 @@ class TypeCheckerTest {
         """.trimIndent()
 
         assertFailWith<ILangGeneralException>("fatal error: Wrong array index type. Expected type IntegerType but got RealType") {
-            val ir = generateIr(example)
-            TypeChecker().check(ir)
-        }
-    }
-
-    @Test
-    fun testFieldAssignWrongType() {
-        val example = """        
-       type TreeNode is record
-           var value : real
-           var key : integer
-           var children : array [2] TreeNode
-       end
-       
-       routine main() : integer is
-            var root : TreeNode
-            root.key := 0
-            root.value := 0.0
-        
-            var node1 : TreeNode
-            node1.key := root.value
-            
-            return 0
-       end
-        """.trimIndent()
-
-        assertFailWith<ILangGeneralException>("fatal error: Can't assign expression with type RealType to left side with type IntegerType") {
             val ir = generateIr(example)
             TypeChecker().check(ir)
         }
