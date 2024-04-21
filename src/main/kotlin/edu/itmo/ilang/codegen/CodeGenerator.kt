@@ -460,7 +460,7 @@ class CodeGenerator : Closeable {
                 )
             }
             is RoutineCall -> processRoutineCall(expression)
-            is UninitializedLiteral -> LLVMConstNull(types.voidType)
+            is UninitializedLiteral -> error("you shall not use uninitialized as a value")
         }
     }
 
