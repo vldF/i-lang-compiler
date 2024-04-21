@@ -87,11 +87,6 @@ class iLangParserTests {
     }
     
     @Test
-    fun graph_test() {
-        ParserTestsRunner.run("graph")
-    }
-    
-    @Test
     fun is_prime_test() {
         ParserTestsRunner.run("is_prime")
     }

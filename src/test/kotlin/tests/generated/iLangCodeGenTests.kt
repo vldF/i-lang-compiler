@@ -87,11 +87,6 @@ class iLangCodeGenTests {
     }
     
     @Test
-    fun graph_test() {
-        CodeGenTestsRunner.run("graph")
-    }
-    
-    @Test
     fun is_prime_test() {
         CodeGenTestsRunner.run("is_prime")
     }

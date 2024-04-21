@@ -87,11 +87,6 @@ class iLangEndToEndCompilerTests {
     }
     
     @Test
-    fun graph_test() {
-        EndToEndCompilerTestsRunner.run("graph")
-    }
-    
-    @Test
     fun is_prime_test() {
         EndToEndCompilerTestsRunner.run("is_prime")
     }

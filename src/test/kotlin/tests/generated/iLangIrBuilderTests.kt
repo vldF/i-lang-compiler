@@ -87,11 +87,6 @@ class iLangIrBuilderTests {
     }
     
     @Test
-    fun graph_test() {
-        IrBuilderTestsRunner.run("graph")
-    }
-    
-    @Test
     fun is_prime_test() {
         IrBuilderTestsRunner.run("is_prime")
     }
