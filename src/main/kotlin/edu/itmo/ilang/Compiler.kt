@@ -9,8 +9,11 @@ import iLangParser
 import org.antlr.v4.runtime.ANTLRInputStream
 import org.antlr.v4.runtime.CommonTokenStream
 import org.bytedeco.javacpp.Loader
+import java.io.BufferedReader
+import java.io.InputStreamReader
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.*
 
 object Compiler {
     fun compile(programSourceCode: String, outputFile: String) {
@@ -36,12 +39,45 @@ object Compiler {
             LauncherCreator(programIr, launcherFilePath).createLauncher()
 
             val clang = Loader.load(org.bytedeco.llvm.program.clang::class.java)
-            val processBuilder = ProcessBuilder(clang,
-                objectFilePath, launcherFilePath.toString(), "-o", outputFile, "--driver-mode=g++")
+
+            val clangArgs = arrayOf(
+                objectFilePath,
+                launcherFilePath.toString(),
+                "-o",
+                outputFile,
+                "--driver-mode=g++",
+                *getAdditionalClangArgs()
+            )
+
+            val processBuilder = ProcessBuilder(clang, *clangArgs)
             processBuilder.inheritIO().start().waitFor()
         } finally {
             Files.deleteIfExists(Path.of(objectFilePath))
             Files.deleteIfExists(launcherFilePath)
         }
+    }
+
+    private val isMacOS: Boolean = System.getProperty("os.name").lowercase(Locale.getDefault()).contains("mac")
+
+    private fun getAdditionalClangArgs(): Array<String> {
+        if (isMacOS) {
+            val sdkBasePath = getSdkBasePathOnMacOs() ?: return emptyArray()
+            return arrayOf("-isysroot", sdkBasePath)
+        }
+
+        return emptyArray()
+    }
+
+    private fun getSdkBasePathOnMacOs(): String? {
+        val xcrunProcessBuilder = ProcessBuilder("xcrun", "--show-sdk-path")
+        val xcrunProcess = xcrunProcessBuilder.start()
+
+        val output = BufferedReader(InputStreamReader(xcrunProcess.inputStream)).readText().trim('\n')
+        val exitCode = xcrunProcess.waitFor()
+        if (exitCode != 0) {
+            return null
+        }
+
+        return output
     }
 }
