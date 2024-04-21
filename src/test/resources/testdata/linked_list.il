@@ -1,3 +1,5 @@
+// main(): true
+
 type LinkedList is record
     var value : real
     var next : LinkedList
