@@ -137,6 +137,11 @@ class iLangParserTests {
     }
     
     @Test
+    fun uninitialized_test() {
+        ParserTestsRunner.run("uninitialized")
+    }
+    
+    @Test
     fun while_test() {
         ParserTestsRunner.run("while")
     }

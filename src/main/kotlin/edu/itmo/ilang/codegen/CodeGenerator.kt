@@ -59,6 +59,8 @@ class CodeGenerator : Closeable {
 
         val rZero: LLVMValueRef = LLVMConstReal(types.doubleType, 0.0)
         val rOne: LLVMValueRef = LLVMConstReal(types.doubleType, 1.0)
+
+        val nullPointer = LLVMConstPointerNull(types.pointerType)
     }
 
     fun generate(program: Program) {
@@ -242,7 +244,7 @@ class CodeGenerator : Closeable {
         val allocaValue = LLVMBuildAlloca(builder, type, name)
         codegenContext.storeValueDecl(declaration, allocaValue)
 
-        val initializer = createVariableInitializerValue(declaration) ?: return
+        val initializer = createVariableInitializerValue(declaration) ?: constants.nullPointer
 
         LLVMBuildStore(builder, initializer, allocaValue)
     }
@@ -293,16 +295,39 @@ class CodeGenerator : Closeable {
                 LLVMBuildLoad2(builder, types.arrayWrapperType, wrapperAlloc, "load-wrapper")
             }
 
-            is RecordType -> {
-                val llvmType = type.llvmStructType
-
-                LLVMBuildMalloc(builder, llvmType, "structure-malloc")
-            }
+            is RecordType -> getRecordDefaultInitializer(type)
 
             else -> {
                 initialValue
             }
         }
+    }
+
+    private fun getRecordDefaultInitializer(type: RecordType): LLVMValueRef {
+        val llvmType = type.llvmStructType
+
+        val malloc = LLVMBuildMalloc(builder, llvmType, "structure-malloc")
+
+        val typesAndIndexes = type.fields.withIndex().map { Triple(it.index, it.value.first, it.value.second) }
+        for ((idx, fieldName, fieldType) in typesAndIndexes) {
+            val fieldPtr = LLVMBuildStructGEP2(builder, llvmType, malloc, idx, fieldName + "_get")
+
+            val initialValue = when (fieldType) {
+                is RecordType, is ArrayType -> {
+                    constants.nullPointer
+                }
+
+                is RealType -> constants.rZero
+                is IntegerType -> constants.iZero
+                is BoolType -> constants.falseConst
+
+                else -> error("can't initialize field of type ${fieldType::class}")
+            }
+
+            LLVMBuildStore(builder, initialValue, fieldPtr)
+        }
+
+        return malloc
     }
 
     private fun processReturn(statement: Return) {
@@ -470,6 +495,10 @@ class CodeGenerator : Closeable {
     private fun processAccessExpressionAsRhs(expression: AccessExpression): LLVMValueRef {
         return when (expression) {
             is VariableAccessExpression -> {
+                if (expression.variable.name == "uninitialized") {
+                    return constants.nullPointer
+                }
+
                 val variable = expression.variable
                 val storeValue = codegenContext.resolveValue(variable)
                 if (variable is ParameterDeclaration) {
@@ -554,7 +583,7 @@ class CodeGenerator : Closeable {
         var leftValue = processExpression(left)
         var rightValue = processExpression(right)
 
-        if (left.type is IntegerType || left.type is BoolType) {
+        if (left.type is IntegerType || left.type is BoolType || left.type is RecordType || left.type is ArrayType) {
             if (right.type is RealType) {
                 // right is real -> generalize left to real
                 leftValue = LLVMBuildSIToFP(

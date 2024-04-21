@@ -137,6 +137,11 @@ class iLangCodeGenTests {
     }
     
     @Test
+    fun uninitialized_test() {
+        CodeGenTestsRunner.run("uninitialized")
+    }
+    
+    @Test
     fun while_test() {
         CodeGenTestsRunner.run("while")
     }

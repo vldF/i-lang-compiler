@@ -137,6 +137,11 @@ class iLangIrBuilderTests {
     }
     
     @Test
+    fun uninitialized_test() {
+        IrBuilderTestsRunner.run("uninitialized")
+    }
+    
+    @Test
     fun while_test() {
         IrBuilderTestsRunner.run("while")
     }
