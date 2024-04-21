@@ -667,7 +667,7 @@ class CodeGenerator : Closeable {
     private fun getValueOrPointerIfUserType(expression: Expression): LLVMValueRef {
         return when (expression) {
             is ArrayAccessExpression -> processAccessExpressionAsLhs(expression)
-            is VariableAccessExpression -> {
+            is AccessExpression -> {
                 if (expression.type is UserType) {
                     processAccessExpressionAsLhs(expression)
                 } else {
