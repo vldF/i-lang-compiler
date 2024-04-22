@@ -11,7 +11,25 @@ data class VariableDeclaration(
     override val name: String,
     override val type: Type,
     val initialExpression: Expression?,
-) : ValueDeclaration, BodyEntry
+) : ValueDeclaration, BodyEntry {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as VariableDeclaration
+
+        if (name != other.name) return false
+        if (type != other.type) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + type.hashCode()
+        return result
+    }
+}
 
 data class TypeDeclaration(
     override val name: String,

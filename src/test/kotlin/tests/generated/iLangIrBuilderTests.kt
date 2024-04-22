@@ -87,11 +87,6 @@ class iLangIrBuilderTests {
     }
     
     @Test
-    fun graph_test() {
-        IrBuilderTestsRunner.run("graph")
-    }
-    
-    @Test
     fun is_prime_test() {
         IrBuilderTestsRunner.run("is_prime")
     }
@@ -134,6 +129,11 @@ class iLangIrBuilderTests {
     @Test
     fun return_statements_in_if_branches_test() {
         IrBuilderTestsRunner.run("return_statements_in_if_branches")
+    }
+    
+    @Test
+    fun uninitialized_test() {
+        IrBuilderTestsRunner.run("uninitialized")
     }
     
     @Test

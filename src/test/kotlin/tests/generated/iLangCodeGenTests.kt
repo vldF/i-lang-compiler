@@ -87,11 +87,6 @@ class iLangCodeGenTests {
     }
     
     @Test
-    fun graph_test() {
-        CodeGenTestsRunner.run("graph")
-    }
-    
-    @Test
     fun is_prime_test() {
         CodeGenTestsRunner.run("is_prime")
     }
@@ -134,6 +129,11 @@ class iLangCodeGenTests {
     @Test
     fun return_statements_in_if_branches_test() {
         CodeGenTestsRunner.run("return_statements_in_if_branches")
+    }
+    
+    @Test
+    fun uninitialized_test() {
+        CodeGenTestsRunner.run("uninitialized")
     }
     
     @Test

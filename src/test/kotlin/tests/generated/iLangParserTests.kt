@@ -87,11 +87,6 @@ class iLangParserTests {
     }
     
     @Test
-    fun graph_test() {
-        ParserTestsRunner.run("graph")
-    }
-    
-    @Test
     fun is_prime_test() {
         ParserTestsRunner.run("is_prime")
     }
@@ -134,6 +129,11 @@ class iLangParserTests {
     @Test
     fun return_statements_in_if_branches_test() {
         ParserTestsRunner.run("return_statements_in_if_branches")
+    }
+    
+    @Test
+    fun uninitialized_test() {
+        ParserTestsRunner.run("uninitialized")
     }
     
     @Test

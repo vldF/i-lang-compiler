@@ -9,5 +9,4 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
       - name: Run test
-        # todo: remove excludeTests param when all codegen tests will be green
-        run: ./gradlew -PexcludeTests="iLangCodeGenTests*,iLangEndToEndCompilerTests*" test
+        run: ./gradlew test

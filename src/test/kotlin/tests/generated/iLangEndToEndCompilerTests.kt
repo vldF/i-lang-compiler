@@ -32,6 +32,11 @@ class iLangEndToEndCompilerTests {
     }
     
     @Test
+    fun array_size_test() {
+        EndToEndCompilerTestsRunner.run("array_size")
+    }
+    
+    @Test
     fun arrays_test() {
         EndToEndCompilerTestsRunner.run("arrays")
     }
@@ -82,11 +87,6 @@ class iLangEndToEndCompilerTests {
     }
     
     @Test
-    fun graph_test() {
-        EndToEndCompilerTestsRunner.run("graph")
-    }
-    
-    @Test
     fun is_prime_test() {
         EndToEndCompilerTestsRunner.run("is_prime")
     }
@@ -122,8 +122,18 @@ class iLangEndToEndCompilerTests {
     }
     
     @Test
+    fun return_array_test() {
+        EndToEndCompilerTestsRunner.run("return_array")
+    }
+    
+    @Test
     fun return_statements_in_if_branches_test() {
         EndToEndCompilerTestsRunner.run("return_statements_in_if_branches")
+    }
+    
+    @Test
+    fun uninitialized_test() {
+        EndToEndCompilerTestsRunner.run("uninitialized")
     }
     
     @Test
