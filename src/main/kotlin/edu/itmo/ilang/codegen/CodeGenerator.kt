@@ -188,7 +188,7 @@ class CodeGenerator : Closeable {
                 is Break -> processBreak()
                 is Continue -> processContinue()
                 is RoutineCall -> processRoutineCall(statement)
-                is TypeDeclaration -> TODO()
+                is TypeDeclaration -> error("unsupported")
             }
         }
     }
