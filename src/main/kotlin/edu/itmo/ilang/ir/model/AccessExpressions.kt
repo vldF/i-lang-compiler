@@ -17,7 +17,7 @@ data class FieldAccessExpression(
         get() = when (accessedType) {
             is RecordType -> accessedType.fields.first { it.first == field }.second
             is ArrayType -> if (field == "size") IntegerType else Nothing
-            else -> TODO()
+            else -> error("unsupported accessed type")
         }
 }
 
