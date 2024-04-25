@@ -45,7 +45,7 @@ java {
 }
 
 application {
-    mainClass.set("edu.itmo.ilang.AppKt")
+    mainClass.set("edu.itmo.ilang.MainKt")
 }
 
 tasks.generateGrammarSource {
